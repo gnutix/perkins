@@ -509,6 +509,7 @@ html.short #read-done h2 { font-size: 18px; }
 .legend i.m3 { background: var(--miss-3); border-color: var(--miss-3); }
 .sg-detail { margin: 8px 0 0; min-height: 36px; font-size: 13px; color: var(--ink-soft); }
 .sg-detail b { color: var(--ink); }
+.sg-detail .btn { display: table; margin-top: 8px; }
 .cf-list { display: flex; flex-wrap: wrap; gap: 10px 18px; }
 .cf i.to { line-height: 24px; }
 .cf-list .cf small { font: 400 12px/1.2 var(--f-body); }
@@ -1567,7 +1568,7 @@ div.toggle { cursor: default; }
     return null;
   }
   function goNext() {
-    if (ex?.li === 'weak') { startDrill(drill.from); return; }
+    if (ex?.li === 'weak') { startDrill(drill.from, drill.k); return; }
     const n = nextTarget(); if (n) startEx(...n); else openPicker();
   }
 
@@ -1747,9 +1748,14 @@ div.toggle { cursor: default; }
     return toks.join(' ');
   }
 
-  // The weakest signs and the pairs mixed up, or the letters picked by hand (6 at most per drill)
-  function drillPlan(from) {
+  // The weakest signs and the pairs mixed up, the letters picked by hand (6 at most per drill), or one
+  // sign with the two it is most mixed up with, itself first in each pair
+  function drillPlan(from, k) {
     const conf = confusions().filter(([a, b]) => kindOf(a) === kindOf(b));
+    if (from === 'sign') {
+      const pairs = conf.filter(([a, b]) => a === k || b === k).slice(0, 2).map(([a, b]) => (a === k ? [a, b] : [b, a]));
+      return { targets: [k, ...pairs.map(([, b]) => b)], pairs };
+    }
     if (from === 'pick') {
       const chosen = picked.length > 6 ? shuffle(picked).slice(0, 6) : [...picked];
       const pairs = conf.filter(([a, b]) => chosen.includes(a) && chosen.includes(b)).slice(0, 2).map(([a, b]) => [a, b]);
@@ -1760,11 +1766,15 @@ div.toggle { cursor: default; }
     return { targets: [...new Set([...pairs.flat(), ...weakSigns().map((s) => s.k)])].slice(0, 6), pairs };
   }
 
-  let drill = null; // { from, title, text }: the 'weak' lesson
-  function startDrill(from) {
-    const { targets, pairs } = drillPlan(from);
+  // A drill on one sign makes good text for a letter or the capital sign; a digit, a punctuation mark
+  // or the number sign alone would come out as mostly unrelated words
+  const drillable = (k) => k === 'maj' || kindOf(k) === 'letter';
+  let drill = null; // { from, k, title, text }: the 'weak' lesson
+  function startDrill(from, k) {
+    const { targets, pairs } = drillPlan(from, k);
     if (!targets.length) { openPicker(); return; }
-    drill = { from, title: from === 'pick' ? 'Mes lettres' : 'Points faibles', text: makeDrill(targets, pairs) };
+    const title = from === 'sign' ? `Signe ${signName(k)}` : from === 'pick' ? 'Mes lettres' : 'Points faibles';
+    drill = { from, k, title, text: makeDrill(targets, pairs) };
     startEx('weak', 0);
   }
 
@@ -2282,6 +2292,7 @@ div.toggle { cursor: default; }
     }
     const instead = pg.conf.filter((p) => p.k === k).slice(0, 4);
     if (instead.length) html += ` À sa place, tu as tapé : ${instead.map((p) => `<b>${esc(p.typed === '?' ? `points ${dotList(p.got)}` : p.typed)}</b> (${times(p.n)})`).join(', ')}.`;
+    if (drillable(k)) html += `<button class="btn small" data-drill="${esc(k)}">S’entraîner sur ${k === 'maj' ? 'les majuscules' : esc(k)}</button>`;
     box.innerHTML = html;
   }
 
@@ -2391,6 +2402,8 @@ div.toggle { cursor: default; }
     drawChart(name);
   });
   pgBody.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-drill]');
+    if (go) { startDrill('sign', go.dataset.drill); return; }
     const tile = e.target.closest('.sg');
     if (!tile || !pg) return;
     pg.sel.sign = pg.sel.sign === tile.dataset.k ? null : tile.dataset.k;
