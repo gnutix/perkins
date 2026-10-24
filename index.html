@@ -2229,7 +2229,7 @@ div.toggle { cursor: default; }
     // Signs mixed up
     const conf = pg.conf.slice(0, 8);
     const typedCell = (p) => `<span class="wk">${cellSVG(p.got)}${p.typed === 'maj' || p.typed === 'num' || p.typed === 'espace' ? `<b class="word">${p.typed}</b>` : `<b>${esc(p.typed)}</b>`}</span>`;
-    const confHTML = conf.length ? sec('Souvent confondus', 'Le signe attendu, puis ce que tu as tapé à la place (y compris ce que tu as corrigé toi-même en mode libre).',
+    const confHTML = conf.length ? sec('Souvent confondus', 'Sur les 4 dernières semaines : le signe attendu, puis ce que tu as tapé à la place (y compris ce que tu as corrigé toi-même en mode libre).',
       `<div class="cf-list">${conf.map((p) => `<span class="cf"><span><span class="wk">${cellSVG(keyMask(p.k) ?? 0)}${signLabel(p.k)}</span><i class="to">→</i>${typedCell(p)}</span>
         <small>${times(p.n)}${p.free ? `, dont ${num(p.free)} en libre` : ''}</small></span>`).join('')}</div>`) : '';
 
