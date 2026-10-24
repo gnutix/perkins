@@ -793,41 +793,165 @@ div.toggle { cursor: default; }
 
   // Common words for the "Points faibles" drills, picked by the letters they contain
   const WORDS = `
-    a à ah au bah ça ce ces cet chez dans de des du elle en est et eu il ici là le les lui ma mais me mes moi mon
-    ne ni nous on ou où oui par pas peu plus pour qui que quoi sa sans se ses si son sous sur ta te tes toi ton tout
-    très tu un une vers voici voilà vous y déjà donc car avec après avant bien encore souvent toujours jamais hier
-    demain bientôt tôt tard près même prêt
-    bac cage chef face biche fiche hache aide jade beige badge chic cache chiche fade bide gag dada hic
-    chat chien cheval vache mouton poule coq lapin souris oiseau poisson cochon canard âne zèbre lion tigre ours loup
-    renard hibou abeille mouche fourmi papillon escargot koala lynx girafe dauphin baleine requin crabe singe gazelle
-    chèvre bœuf wapiti
-    maison porte fenêtre table chaise lit lampe tapis mur toit cuisine chambre jardin fleur arbre herbe feuille forêt
-    montagne rivière lac mer plage île ciel soleil lune étoile nuage pluie neige vent orage hiver été automne
-    printemps zone
-    pain lait eau vin thé café sucre sel beurre fromage pomme poire fraise cerise citron orange banane tomate salade
-    soupe riz pâte gâteau crêpe tarte chocolat confiture miel œuf viande poulet jambon frite huile moka yaourt kiwi
-    noix maïs sandwich dîner pêche
-    père mère frère sœur fils fille enfant bébé ami amie homme femme garçon dame monsieur madame oncle tante cousin
-    roi reine prince maître élève docteur médecin héros maçon
-    tête main pied bras jambe dos cœur œil yeux nez bouche dent oreille cheveu doigt genou ventre peau voix lèvre
-    jour nuit matin soir midi heure minute semaine mois année an âge temps fois lundi mardi mercredi jeudi vendredi
-    samedi dimanche août week noël siècle
-    école classe cahier livre stylo crayon papier lettre mot phrase page leçon dessin musique chanson film jeu jouet
-    ballon vélo voiture train avion bateau taxi wagon bus métro route rue ville village pays gare hôtel château église
-    musée magasin marché zoo parc boîte flûte bâton câble canoë kayak ski web wok poker képi kilo pyjama yoga lycée
-    cycle type texte prix choix croix paix gaz gazon lézard capharnaüm mosaïque faïence théâtre gîte chaîne huître
-    côte rôle pôle diplôme fantôme bûche croûte nœud vœu œuvre problème collègue glaçon fièvre tâche grâce
-    rouge bleu vert jaune noir blanc gris rose brun
+    a à ah au bah ça ce ces cet chez dans de des du elle en est et eu il ici là le les lui ma mais me mes moi
+    mon ne ni nous on ou où oui par pas peu plus pour qui que quoi sa sans se ses si son sous sur ta te tes toi
+    ton tout très tu un une vers voici voilà vous y déjà donc car avec après avant bien encore souvent toujours
+    jamais hier demain bientôt tôt tard près même prêt bac cage chef face biche fiche hache aide jade beige
+    badge chic cache chiche fade bide gag dada hic chat chien cheval vache mouton poule coq lapin souris oiseau
+    poisson cochon canard âne zèbre lion tigre ours loup renard hibou abeille mouche fourmi papillon escargot
+    koala lynx girafe dauphin baleine requin crabe singe gazelle chèvre bœuf wapiti maison porte fenêtre table
+    chaise lit lampe tapis mur toit cuisine chambre jardin fleur arbre herbe feuille forêt montagne rivière lac
+    mer plage île ciel soleil lune étoile nuage pluie neige vent orage hiver été automne printemps zone pain
+    lait eau vin thé café sucre sel beurre fromage pomme poire fraise cerise citron orange banane tomate salade
+    soupe riz pâte gâteau crêpe tarte chocolat confiture miel œuf viande poulet jambon frite huile moka yaourt
+    kiwi noix maïs sandwich dîner pêche père mère frère sœur fils fille enfant bébé ami amie homme femme garçon
+    dame monsieur madame oncle tante cousin roi reine prince maître élève docteur médecin héros maçon tête main
+    pied bras jambe dos cœur œil yeux nez bouche dent oreille cheveu doigt genou ventre peau voix lèvre jour
+    nuit matin soir midi heure minute semaine mois année an âge temps fois lundi mardi mercredi jeudi vendredi
+    samedi dimanche août week noël siècle école classe cahier livre stylo crayon papier lettre mot phrase page
+    leçon dessin musique chanson film jeu jouet ballon vélo voiture train avion bateau taxi wagon bus métro
+    route rue ville village pays gare hôtel château église musée magasin marché zoo parc boîte flûte bâton câble
+    canoë kayak ski web wok poker képi kilo pyjama yoga lycée cycle type texte prix choix croix paix gaz gazon
+    lézard capharnaüm mosaïque faïence théâtre gîte chaîne huître côte rôle pôle diplôme fantôme bûche croûte
+    nœud vœu œuvre problème collègue glaçon fièvre tâche grâce rouge bleu vert jaune noir blanc gris rose brun
     deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize vingt cent mille zéro
-    grand petit gros long court haut bas beau belle joli jolie bon bonne mauvais chaud chaude froid doux dur vieux
-    jeune vide plein fort facile drôle triste content heureux sûr mûr rapide lent riche pauvre propre exact fixe
-    bizarre humide hideux hardi naïf aigüe ambigüe français mieux roux
-    être avoir faire dire aller voir venir prendre donner mettre parler manger boire dormir jouer lire écrire chanter
-    danser courir sauter nager marcher aimer chercher trouver penser savoir pouvoir vouloir finir partir sortir rire
-    ouvrir fermer haïr payer reçu rêve fête bête goût coût jeûne abîme contrôle piqûre héroïne égoïste aïeul ouïe
-    jeux feux luxe boxe axe
-    chose cher histoire habit honte hasard poche roche chaque chemin chemise chacun malheur bonheur dehors déchet
-    habitude date danse droit droite monde rond sud mode code coude cadeau dinde dessert radio sardine solide idée
+    grand petit gros long court haut bas beau belle joli jolie bon bonne mauvais chaud chaude froid doux dur
+    vieux jeune vide plein fort facile drôle triste content heureux sûr mûr rapide lent riche pauvre propre
+    exact fixe bizarre humide hideux hardi naïf aigüe ambigüe français mieux roux être avoir faire dire aller
+    voir venir prendre donner mettre parler manger boire dormir jouer lire écrire chanter danser courir sauter
+    nager marcher aimer chercher trouver penser savoir pouvoir vouloir finir partir sortir rire ouvrir fermer
+    haïr payer reçu rêve fête bête goût coût jeûne abîme contrôle piqûre héroïne égoïste aïeul ouïe jeux feux
+    luxe boxe axe chose cher histoire habit honte hasard poche roche chaque chemin chemise chacun malheur
+    bonheur dehors déchet habitude date danse droit droite monde rond sud mode code coude cadeau dinde dessert
+    radio sardine solide idée maisons portes fenêtres chambres cuisines salon toits murs sol plafond escalier
+    escaliers cave grenier jardins balcon terrasse garage clé clés lits tables chaises fauteuil canapé armoire
+    tiroir tiroirs étagère lampes miroir rideau rideaux coussin oreiller drap draps couverture bureau bureaux
+    placard douche bain baignoire lavabo évier robinet four frigo poêle casserole assiette assiettes verre
+    verres tasse tasses bol bols cuillère fourchette couteau couteaux plat plats nappe serviette savon brosse
+    peigne pains fromages œufs poissons saucisse salades pâtes pommes poires bananes oranges fraises cerises
+    raisin pêches prune abricot melon ananas tomates carotte carottes oignon ail chou poireau haricot haricots
+    pois légume légumes fruit fruits poivre gâteaux tartes biscuit crêpes glace bonbon bonbons jus bière sirop
+    repas déjeuner goûter souper menu recette cuisinier boulanger boulangerie pâtisserie boucher épicerie corps
+    têtes visage cheveux dents langue oreilles cou épaule épaules mains doigts ongle poitrine jambes genoux
+    pieds orteil sang os muscle front joue joues lèvres menton gorge poignet cheville talon famille parents
+    frères sœurs filles enfants bébés cousine neveu nièce mari époux épouse amis amies copain copine voisin
+    voisine mademoiselle hommes femmes garçons gens personne personnes chats chiens chevaux vaches cochons
+    moutons lapins poules oiseaux rat loups renards éléphant serpent tortue grenouille abeilles araignée aigle
+    corbeau pigeon cygne écureuil hérisson castor cerf sanglier taureau ânes chameau crocodile nature arbres
+    fleurs feuilles branche racine forêts bois champ champs prairie montagnes colline vallée rivières fleuve
+    lacs mers océan plages sable vague vagues îles rocher pierre pierres terre nuages étoiles tempête brouillard
+    chaleur saison saisons météo arc villes villages rues routes place pont ponts gares aéroport port écoles
+    collège université hôpital pharmacie banque poste magasins boutique cinéma bibliothèque piscine parcs stade
+    restaurant quartier immeuble tour châteaux voitures vélos moto trains tram avions bateaux camion ticket
+    billet billets voyage voyages valise passeport carte cartes plan trajet arrêt départ arrivée classes élèves
+    maîtresse professeur leçons devoir devoirs cahiers livres stylos crayons gomme règle cartable tableau craie
+    pages lettres mots phrases histoires conte contes question questions réponse réponses exercice exercices
+    examen note notes lecture écriture dictée calcul travail métier patron réunion projet argent euro franc
+    francs salaire facture heures minutes seconde secondes jours journée nuits matins soirs soirée minuit
+    semaines années ans moment janvier février mars avril mai juin juillet septembre octobre novembre décembre
+    vêtement vêtements pantalon jupe robe robes manteau veste pull chaussure chaussures botte bottes chaussette
+    chaussettes chapeau bonnet écharpe gant gants ceinture sac sacs lunettes montre bague collier chansons piano
+    guitare violon tambour chant fêtes cadeaux jouets poupée films photo photos image images dessins peinture
+    couleur couleurs sport sports match équipe rouges bleue bleus jaunes verte verts noire noirs blanche blancs
+    grise roses violet violette marron brune doré grande grands grandes petite petits petites grosse longue
+    courte haute basse large étroit beaux belles laid nouveau nouvelle nouveaux vieille jeunes bons mauvaise
+    meilleur pire vrai vraie faux fausse difficile simple sale pleine froide douce dure lourd léger légère lente
+    forte faible heureuse contente gentil gentille méchant calme tranquille sérieux sérieuse fatigué fatiguée
+    malade sage fier fière timide curieux curieuse prête seul seule libre premier première dernier dernière
+    prochain prochaine autre autres quelque plusieurs toute tous toutes mange manges mangeons mangez mangent
+    mangé mangeait mangeaient mangera boit buvons buvez boivent bu buvait dors dort dormons dormez dorment dormi
+    dormait parle parles parlons parlez parlent parlé parlait parlera aime aimes aimons aimez aiment aimé aimait
+    aimera regarder regarde regardes regardons regardez regardent regardé regardait écouter écoute écoutes
+    écoutons écoutez écoutent écouté jouons jouez jouent joué jouait chante chantes chantons chantez chantent
+    chanté dansons dansez dansent dansé marche marches marchons marchez marchent cours courons courez courent
+    couru courait saute sautons sautent sauté nage nageons nagent nagé lis lisons lisez lisent lu lisait écris
+    écrit écrivons écrivez écrivent écrivait suis es sommes êtes sont était étaient sera seront ai as avons avez
+    ont avait avaient aura auront vais vas va allons allez vont allé allée allait allaient ira iront fais fait
+    faisons faites font faisait fera viens vient venons venez viennent venu venue venait viendra vois voit
+    voyons voyez voient vu vue voyait verra peux peut pouvons pouvez peuvent pu pouvait pourra veux veut voulons
+    voulez veulent voulu voulait voudra sais sait savons savez savent su savait saura dis dit disons dites
+    disent disait dira prends prend prenons prenez prennent pris prenait prendra mets met mettons mettez mettent
+    mis mettait donne donnes donnons donnez donnent donné donnait trouve trouves trouvons trouvez trouvent
+    trouvé trouvait pense penses pensons pensez pensent pensé pensait croire crois croit croyons croient cru
+    croyait pars part partons partez partent parti partie partait sors sort sortons sortez sortent sorti sortait
+    entrer entre entrons entrez entrent entré entrait rester reste restons restez restent resté restait arriver
+    arrive arrivons arrivez arrivent arrivé arrivait tomber tombe tombons tombent tombé tombait monter monte
+    montons montent monté descendre descends descend descendons descendent descendu passer passe passons passez
+    passent passé passait rentrer rentre rentrons rentrent rentré ouvre ouvrons ouvrez ouvrent ouvert ouverte
+    ouvrait ferme fermons fermez ferment fermé fermée fermait cherche cherchons cherchez cherchent cherché
+    cherchait attendre attends attend attendons attendez attendent attendu attendait répondre réponds répond
+    répondons répondez répondent répondu répondait demander demande demandons demandez demandent demandé
+    demandait appeler appelle appelons appelez appellent appelé appelait aider aidons aidez aident aidé aidait
+    laisser laisse laissons laissent laissé travailler travaille travaillons travaillez travaillent travaillé
+    travaillait apprendre apprends apprend apprenons apprenez apprennent appris apprenait comprendre comprends
+    comprend comprenons comprenez comprennent compris comprenait finis finit finissons finissez finissent fini
+    finie finissait choisir choisis choisit choisissons choisissent choisi grandir grandit grandissent grandi
+    rougir rougit rougi remplir remplit rempli acheter achète achetons achetez achètent acheté achetait vendre
+    vends vend vendons vendent vendu paie payons payez paient payé coûter coûte coûtent coûté porter portons
+    portez portent porté portait laver lave lavons lavent lavé cuire cuit cuits cuite préparer prépare préparons
+    préparent préparé couper coupe coupons coupent coupé cuisiner cuisinons cuisiné habiter habite habitons
+    habitez habitent habité vivre vis vit vivons vivez vivent vécu vivait mourir meurt meurent mort morte naître
+    né née sentir sens sent sentons sentent senti sentait toucher touche touchons touchent touché tenir tiens
+    tient tenons tenez tiennent tenu tenait commencer commence commençons commencent commencé commençait
+    continuer continue continuons continuent continué arrêter arrête arrêtons arrêtent arrêté oublier oublie
+    oublions oublient oublié rappeler rappelle rappelé montrer montrons montrent montré raconter raconte
+    racontons racontent raconté expliquer explique expliquons expliquent expliqué compter compte comptons
+    comptent compté gagner gagne gagnons gagnent gagné perdre perds perd perdons perdent perdu perdait pleurer
+    pleure pleurent pleuré ris rit rions riez rient souri sourire sourit souriait crier crie crions crient crié
+    dessiner dessine dessinons dessinent dessiné peindre peins peint peignons peignent rêver rêvons rêvent rêvé
+    rêvait voler vole volons volent volé volait trop assez beaucoup moins aussi parfois rarement loin dedans
+    dessus dessous devant derrière pendant depuis vite lentement doucement mal ensemble seulement vraiment
+    surtout enfin ensuite alors puis maintenant soudain partout ailleurs autour trente quarante cinquante
+    soixante million quel quelle quels quelles comment pourquoi quand combien lequel laquelle dont parce âme
+    plâtre râteau bâtiment mâcher pâle âgé âgée hâte gâté pêcheur arête bêtise honnête enquête intérêt évêque
+    guêpe fêter paître connaître paraître côté plutôt rôti nôtre vôtre trône icône dôme symptôme cône sûre mûre
+    dû brûler brûlé voûte aiguë ciguë ambiguë israélien naïve égoïsme héroïque laïque coïncidence païen caïman
+    stoïque archaïque astéroïde paranoïa baïonnette glaïeul vœux mœurs manœuvre œillet chœur rancœur écœurant
+    cœurs bœufs nœuds façon reçue française façade hameçon commerçant soupçon aperçu déçu déçue balançoire delà
+    lumière système poème crème sève trèfle siège piège manège idées pensée raison souvenir souvenirs espoir
+    peur colère joie tristesse surprise amour amitié courage patience silence bruit cri larme larmes envie
+    besoin plaisir chance secret secrets mystère vérité mensonge danger aventure liberté guerre force santé
+    maladie vie naissance objet objets choses truc machine machines outil outils marteau clou clous scie pinceau
+    ciseaux corde fil aiguille bouton boutons boîtes panier carton papiers enveloppe timbre colis cadre horloge
+    réveil téléphone ordinateur écran clavier télévision appareil caméra batterie bougie allumette briquet
+    parapluie infirmier infirmière dentiste pompier policier facteur boulangère vendeur vendeuse coiffeur
+    coiffeuse jardinier fermier fermière chauffeur pilote marin soldat princesse chevalier sorcière fée géant
+    ogre dragon lutin pirate mouvement voyageur sentier clairière ruisseau source cascade étang marais désert
+    volcan grotte falaise sommet glacier flocon goutte horizon paysage planète univers espace fusée comète
+    nombre nombres chiffre chiffres moitié quart double total somme parties morceau morceaux bout bouts milieu
+    centre bord bords fond coin coins côtés gauche action actions attention addition adresse avenir bataille
+    cabane campagne capitale cercle charge client cloche colonne commerce compagnie concours conseil cour course
+    crise début désir direction discours douleur drapeau effet effort élan énergie ennemi entrée épée erreur
+    esprit état étude exemple expérience faim fatigue faute fin forme fortune foule fumée genre geste groupe
+    guide honneur humeur journal joueur juge justice ligne liste loi lutte magie manière matière mémoire menace
+    mesure mine miracle modèle montée morale moyen nation niveau nom nord odeur ombre opinion ordre orgueil
+    origine ouest paire parole passage passion patte peine pente perle piste plante plume poids point pointe
+    police position poudre présence preuve prison profit promesse public pupitre qualité quantité queue rang
+    rapport rayon recherche retour richesse roue ruse salle scène science service signe société solution sommeil
+    sorte souffle style sujet surface taille talent tas témoin terrain titre trace trait trésor tribu troupe
+    trou tube usage usine valeur vapeur victoire vitesse voie vol volonté bleues vertes noires grises rondes
+    carrées vieilles nouvelles longues courtes hautes basses lourdes légères chaudes froides douces dures vraies
+    fausses pleines vides propres sales fortes faibles riches pauvres heureuses tristes contentes gentilles
+    méchantes calmes drôles sérieuses malades fières timides curieuses seules libres premières dernières ronde
+    carré carrée pointu plate épais épaisse fine mince sombre clair claire brillant brillante mouillé mouillée
+    sec sèche lisse rugueux tiède amer amère sucré sucrée salé salée délicieux délicieuse étrange étonnant
+    magnifique merveilleux merveilleuse terrible horrible énorme minuscule immense profond profonde prudent
+    prudente courageux courageuse paresseux paresseuse poli polie aimable célèbre inconnu inconnue utile inutile
+    possible impossible important importante nécessaire agréable désagréable dangereux dangereuse joyeux joyeuse
+    silencieux bruyant bruyante sauvage domestique ancien ancienne moderne privé privée irai iras irons irez
+    serai seras serons serez aurai auras aurons aurez ferai feras ferons ferez ferait viendrai viendras
+    viendront verrai verras verront pourrai pourras pourront voudrai voudrais voudrait voudrions saurai sauras
+    sauront dirai diras diront prendrai prendras prendront mangerai mangeras mangerons mangerez mangeront
+    parlerai parleras parlerons parleront aimerai aimerais aimerait aimerions jouerai joueras jouerons joueront
+    finirai finiras finira finirons finiront étais étions étiez avais aviez allais allions alliez faisais
+    faisions faisiez faisaient venais venions veniez venaient voyais voyions voyaient pouvais pouvions pouvaient
+    voulais voulions voulaient savais savions savaient disais disions disaient prenais prenions prenaient
+    mangeais mangions mangiez jouais jouions jouaient parlais parlions parlaient regardais regardions
+    regardaient chantais chantions chantaient dormais dormions dormaient lisais lisions lisaient écrivais
+    écrivions sois soit soyons soyez soient aie ait ayons ayez aient fasse fassent puisse puissent veuille sache
+    saches aille ailles aillent vienne viennes prenne prennes dise travaillions marchions courions sautions
+    nagions dansions pensions trouvions cherchions demandions répondions attendions ouvrions fermions finissions
+    choisissions fleuri fleurie neigeux pluvieux ensoleillé nuageux venteux orageux müesli
   `.trim().split(/\s+/);
 
   /* ---------- Storage ---------- */
