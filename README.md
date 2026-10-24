@@ -4,6 +4,7 @@ A Perkins brailler trainer for French braille (non abrégé), made for a phone h
 
 **Use it:** https://gnutix.github.io/perkins/
 On iPhone, open it in Safari, then *Partager › Sur l'écran d'accueil* to get it full screen.
+Each launch loads the latest version when online, and the last copy keeps working offline (`sw.js`).
 
 ## Modes
 

@@ -1196,6 +1196,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 
   applySizes();
   setMode('free');
+
+  // Fetches the latest version on each launch, and keeps a copy for offline use (see sw.js)
+  navigator.serviceWorker?.register('sw.js').catch(() => { /* needs HTTPS */ });
 })();
 </script>
 </body>
