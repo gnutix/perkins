@@ -928,11 +928,13 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     ex.hint = true;
     ex.err = null;
     ex.locked = false;
+    lastShown = null;
     renderEx();
   }
 
   function finishEx() {
     ex.done = true;
+    lastShown = null;
     ex.t1 = performance.now();
     const cells = ex.units.reduce((n, u) => n + u.cells.length, 0);
     const accuracy = Math.round((100 * cells) / (cells + ex.errors));
@@ -1201,7 +1203,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   el.banner.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'hint') showHint();
-    if (act === 'retry') { ex.err = null; ex.locked = false; renderEx(); }
+    if (act === 'retry') { ex.err = null; ex.locked = false; lastShown = null; renderEx(); }
   });
   $('#done-next').addEventListener('click', goNext);
   $('#done-again').addEventListener('click', restartEx);
