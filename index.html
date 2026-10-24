@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Six Points">
+<meta name="theme-color" content="#23292e">
+<title>Six Points</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: a sheet of braille paper on top, the Perkins machine body below (3 2 1 · 4 5 6, space bar under the thumbs). One screen, no page scroll. */
+:root {
+  --paper: #f1f2ec;
+  --paper-2: #e3e5dd;
+  --card: #f8f9f5;
+  --rule: #d3d6cc;
+  --ink: #1b2025;
+  --ink-soft: #5d646b;
+  --machine: #23292e;
+  --machine-2: #2e353b;
+  --machine-ink: #9aa2a8;
+  --key: #cdd0c8;
+  --key-ink: #1b2025;
+  --accent: #f0c23c;
+  --ok: #2d7a4b;
+  --err: #c2352a;
+  --err-bg: #f7dcd7;
+  --err-ink: #7e1d15;
+  --hint: #2f74b8;
+  --hint-bg: #dbe7f3;
+  --hint-ink: #163f66;
+  --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+  --f-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", monospace;
+  --cw: 20px;    /* free-typing cell width */
+  --ucw: 16px;   /* exercise cell width */
+  --uch: 24px;   /* exercise letter size */
+  color-scheme: light;
+}
+@media (orientation: landscape) and (max-height: 440px) {
+  :root { --cw: 17px; --ucw: 13px; --uch: 21px; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html {
+  height: 100%;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  background: linear-gradient(var(--paper) 50%, var(--machine) 50%);
+}
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: linear-gradient(var(--paper) 50%, var(--machine) 50%);
+  color: var(--ink);
+  font: 400 15px/1.4 var(--f-body);
+}
+button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--hint); outline-offset: 2px; }
+.app { height: 100%; display: flex; flex-direction: column; position: relative; }
+.gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- Braille cells ---------- */
+.bc { display: block; flex: none; }
+.bc .on { fill: var(--ink); }
+.bc .off { fill: var(--ink-soft); opacity: .4; }
+.bc.ghost .on { fill: var(--ink-soft); opacity: .35; }
+
+/* ---------- Paper ---------- */
+.paper {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+.bar { display: flex; align-items: center; gap: 4px; padding-block: 6px 2px; }
+.tabs { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper-2); flex: none; }
+.tabs button {
+  border: 0; background: none; cursor: pointer;
+  padding: 6px 14px; border-radius: 999px;
+  font-weight: 600; font-size: 14px; color: var(--ink-soft);
+}
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.meta {
+  flex: 1 1 0; min-width: 0; padding-inline: 8px;
+  font-size: 13px; color: var(--ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.meta b { color: var(--ink); font-weight: 600; }
+.spacer { flex: 1; }
+.ibtn {
+  flex: none; width: 36px; height: 36px; border: 0; border-radius: 10px;
+  background: none; color: var(--ink); cursor: pointer;
+  display: grid; place-items: center;
+}
+.ibtn:hover { background: var(--paper-2); }
+.ibtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ibtn.confirm { width: auto; padding-inline: 10px; background: var(--err); color: #fff; font-weight: 600; font-size: 13px; }
+.pill {
+  flex: none; cursor: pointer;
+  border: 1.5px solid var(--hint); border-radius: 999px; background: none;
+  color: var(--hint); padding: 5px 12px; font-weight: 600; font-size: 14px;
+}
+.pill[aria-pressed="true"] { background: var(--hint); color: #fff; }
+
+.view { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-block: 6px 10px; }
+
+/* Free typing: braille on top, French underneath */
+.cells { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: 12px; }
+.w { display: flex; gap: 4px; }
+.cell { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: var(--cw); }
+.cell .bc { width: var(--cw); height: calc(var(--cw) * 1.5); }
+.cell b { font: 600 15px/16px var(--f-body); min-height: 16px; }
+.cell.ind b { font: 600 9px/16px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.cell.unk b { color: var(--err); }
+.cell.space { width: calc(var(--cw) * .9); min-width: 0; }
+.nl { flex-basis: 100%; height: 0; }
+.caret {
+  width: 2px; height: calc(var(--cw) * 1.5); margin-left: 3px;
+  background: var(--hint); border-radius: 1px;
+  animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.empty { margin: 4px 0 0; max-width: 34em; color: var(--ink-soft); font-size: 14px; }
+.empty b { color: var(--ink); }
+
+/* Exercise: French on top, braille underneath */
+#ex-view { display: flex; flex-direction: column; gap: 6px; overflow: hidden; padding-block: 2px 8px; }
+.ex-meta-inline { display: none; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+#ex-sheet { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-block: 2px; }
+.units { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: 8px; }
+.u {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 3px 2px 5px; border-radius: 7px; min-width: calc(var(--uch) * .5);
+}
+.u .ch { font: 600 var(--uch)/1 var(--f-body); min-height: var(--uch); }
+.u .cs { display: flex; gap: 2px; }
+.u .bc { width: var(--ucw); height: calc(var(--ucw) * 1.5); }
+.u.done .ch { color: var(--ok); }
+.u.done.missed .ch { color: var(--err); }
+.u.cur { background: #fff6d6; }
+.u.cur::after {
+  content: ""; position: absolute; left: 3px; right: 3px; bottom: 1px;
+  height: 3px; border-radius: 2px; background: var(--accent);
+}
+.u.cur.err { background: var(--err-bg); animation: shake .3s; }
+.u.cur.err .ch { color: var(--err); }
+.u.cur.err::after { background: var(--err); }
+.spk {
+  display: inline-block; width: calc(var(--uch) * .55); height: calc(var(--uch) * .3);
+  margin-top: calc(var(--uch) * .55);
+  border: 2px solid var(--ink-soft); border-top: 0; border-radius: 0 0 3px 3px; opacity: .6;
+}
+.u.done .spk { border-color: var(--ok); }
+@keyframes shake { 20% { translate: -4px 0; } 40% { translate: 4px 0; } 60% { translate: -3px 0; } 80% { translate: 2px 0; } }
+
+.banner {
+  flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+  padding: 5px 6px 5px 12px; border-radius: 12px; font-size: 14px; line-height: 1.25;
+}
+.banner.err { background: var(--err-bg); color: var(--err-ink); }
+.banner.hint { background: var(--hint-bg); color: var(--hint-ink); }
+.banner .msg { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.banner .bc { width: 13px; height: 19.5px; }
+.banner.err .bc .on { fill: var(--err-ink); }
+.banner.hint .bc .on { fill: var(--hint-ink); }
+.banner .hc { display: inline-flex; align-items: center; gap: 5px; padding: 2px 6px; border-radius: 6px; }
+.banner .hc.now { background: rgba(255, 255, 255, .7); }
+.banner .dots { font: 600 13px var(--f-mono); }
+.banner .acts { display: flex; gap: 6px; margin-left: auto; }
+
+.btn {
+  border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer;
+  font-weight: 600; font-size: 14px; background: var(--card); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.btn.primary { background: var(--ink); color: var(--paper); box-shadow: none; }
+.btn.small { padding: 6px 11px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* Finished exercise */
+.finish {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding-block: 10px; text-align: center; overflow-y: auto; background: var(--paper);
+}
+.finish h2 { margin: 0; font: 800 clamp(22px, 5vh, 34px)/1.1 var(--f-body); text-wrap: balance; }
+.stats { display: flex; gap: 6px 22px; flex-wrap: wrap; justify-content: center; }
+.stat { display: flex; flex-direction: column; }
+.stat span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.stat b { font: 700 20px/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
+.finish .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.finish .tip { margin: 0; font-size: 12px; color: var(--ink-soft); }
+
+/* ---------- Machine ---------- */
+.machine {
+  --center: clamp(70px, 15vw, 150px);
+  flex: 0 0 auto;
+  height: clamp(176px, 55%, 360px);
+  display: grid;
+  grid-template-columns: 1fr var(--center) 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding-block: 8px calc(4px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px), calc((100% - 980px) / 2));
+  padding-right: max(16px, env(safe-area-inset-right, 0px), calc((100% - 980px) / 2));
+  background: var(--machine);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.hand { display: flex; align-items: stretch; gap: 8px; min-height: 0; padding: 6px 4px; }
+.key {
+  appearance: none; border: 0; margin: 0; padding: 0; cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.key.dot {
+  flex: 1 1 0; min-width: 0;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  background: var(--key); color: var(--key-ink);
+  font: 700 clamp(20px, 5vh, 34px)/1 var(--f-body);
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .16), 0 2px 0 rgba(0, 0, 0, .45);
+  transition: background-color 50ms, scale 50ms;
+}
+.key.dot.down { background: var(--accent); scale: .97; box-shadow: inset 0 3px 6px rgba(0, 0, 0, .25); }
+.key.dot.hint { box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .16), 0 0 0 4px var(--hint), 0 0 18px 2px var(--hint); animation: pulse 1.2s ease-in-out infinite; }
+.key.dot.hint.down { box-shadow: inset 0 3px 6px rgba(0, 0, 0, .25), 0 0 0 4px var(--hint); }
+@keyframes pulse { 50% { filter: brightness(1.12); } }
+.machine.locked .key.dot { opacity: .35; }
+.machine.flash { animation: flash .4s; }
+@keyframes flash { 0%, 60% { box-shadow: inset 0 0 0 4px var(--err), inset 0 0 40px rgba(194, 53, 42, .5); } }
+
+@media (orientation: landscape) {
+  .hand.left .key.dot { rotate: 9deg; }
+  .hand.right .key.dot { rotate: -9deg; }
+}
+
+.center {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-width: 0; color: var(--machine-ink); pointer-events: none;
+}
+.preview .bc { width: clamp(30px, 9vh, 52px); height: auto; aspect-ratio: 2 / 3; }
+.preview .bc .on { fill: var(--accent); }
+.preview .bc .off { fill: #6c757c; opacity: .6; }
+.preview-label {
+  min-height: 28px; font: 700 26px/28px var(--f-body); color: #fff;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.preview-label.small { font: 600 11px/28px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--machine-ink); }
+.brand { font: 800 10px/1 var(--f-body); letter-spacing: .18em; text-transform: uppercase; color: #6f787f; }
+
+.fnrow { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.key.fn {
+  width: 60px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: transparent; color: var(--accent);
+}
+.key.fn svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.key.fn.down { background: var(--machine-2); }
+.key.space {
+  flex: 0 1 34%; height: 46px;
+  border-radius: 16px 16px 6px 6px;
+  background: var(--accent);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .18);
+}
+.key.space.down { filter: brightness(.9); box-shadow: inset 0 3px 6px rgba(0, 0, 0, .3); }
+.key.space.hint { box-shadow: 0 0 0 4px var(--hint), 0 0 18px 2px var(--hint); animation: pulse 1.2s ease-in-out infinite; }
+
+@media (orientation: portrait) {
+  .machine { --center: 44px; height: clamp(210px, 46%, 400px); column-gap: 6px; }
+  .hand { gap: 6px; padding: 4px 0; }
+  .key.dot { border-radius: 22px; }
+  .brand { display: none; }
+  .preview .bc { width: 26px; }
+  .preview-label { font-size: 20px; }
+  .meta { display: none; }
+  .ex-meta-inline { display: block; }
+  .tabs button { padding: 6px 11px; }
+  .ibtn { width: 32px; }
+}
+@media (orientation: landscape) and (max-height: 440px) {
+  .machine { height: clamp(170px, 54%, 300px); }
+  .bar { padding-block: 4px 0; }
+  .ibtn { width: 34px; height: 34px; }
+}
+
+/* ---------- Overlays ---------- */
+.overlay {
+  position: absolute; inset: 0; z-index: 20;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-block: 12px 28px; background: var(--paper);
+}
+.overlay-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.overlay-head h2 { margin: 0; flex: 1; font: 800 22px/1.1 var(--f-body); }
+.lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.lesson {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  padding: 12px; border-radius: 14px;
+  background: var(--card); border: 1px solid var(--rule);
+}
+.lesson h3 { margin: 0; font: 700 16px/1.2 var(--f-body); }
+.lesson p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.signs { display: flex; flex-wrap: wrap; gap: 6px 5px; }
+.sign { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 600 11px/1 var(--f-mono); color: var(--ink-soft); }
+.sign .bc { width: 12px; height: 18px; }
+.lesson-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.chip {
+  width: 34px; height: 34px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--rule); background: var(--paper);
+  font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.chip.done { background: var(--ok); border-color: var(--ok); color: #fff; }
+.lesson-foot .btn { margin-left: auto; }
+.lesson textarea {
+  width: 100%; min-height: 72px; resize: vertical;
+  padding: 8px 10px; border-radius: 10px; border: 1px solid var(--rule);
+  background: #fff; color: var(--ink); font: 400 16px/1.35 var(--f-body);
+}
+.note { font-size: 12px; color: var(--ink-soft); }
+.note.warn { color: var(--err); }
+.overlay-foot { margin: 16px 0 0; font-size: 13px; color: var(--ink-soft); max-width: 40em; }
+
+.modal {
+  position: absolute; inset: 0; z-index: 30;
+  display: grid; place-items: center; padding: 16px;
+  background: rgba(20, 24, 28, .5);
+}
+.panel {
+  width: min(400px, 100%); max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; border-radius: 16px; background: var(--paper);
+}
+.panel h2 { margin: 0; font: 800 20px var(--f-body); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; cursor: pointer; }
+.toggle small { display: block; font-size: 12px; color: var(--ink-soft); }
+.toggle input { flex: none; width: 22px; height: 22px; accent-color: var(--ink); }
+.panel .keys { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.panel kbd { font: 600 12px var(--f-mono); padding: 1px 5px; border-radius: 4px; background: var(--paper-2); color: var(--ink); }
+
+.toast {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 50;
+  translate: -50% 0; padding: 8px 14px; border-radius: 999px;
+  background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 600;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret, .key.dot.hint, .key.space.hint, .u.cur.err, .machine.flash { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <section class="paper" id="paper">
+    <header class="bar gutter">
+      <div class="tabs" role="tablist" aria-label="Mode">
+        <button id="tab-free" role="tab" aria-selected="true">Libre</button>
+        <button id="tab-ex" role="tab" aria-selected="false">Exercices</button>
+      </div>
+
+      <div class="spacer" id="free-spacer"></div>
+      <div class="meta" id="ex-meta" hidden></div>
+
+      <button class="ibtn" id="btn-copy" aria-label="Copier le texte en français" title="Copier le texte">
+        <svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+      </button>
+      <button class="ibtn" id="btn-clear" aria-label="Tout effacer" title="Tout effacer">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+      </button>
+
+      <button class="pill" id="btn-hint" aria-pressed="false" hidden>Indice</button>
+      <button class="ibtn" id="btn-restart" aria-label="Recommencer l’exercice" title="Recommencer" hidden>
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>
+      </button>
+      <button class="ibtn" id="btn-lessons" aria-label="Choisir un exercice" title="Exercices" hidden>
+        <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+      </button>
+
+      <button class="ibtn" id="btn-settings" aria-label="Réglages" title="Réglages">
+        <svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      </button>
+    </header>
+
+    <div class="view gutter" id="free-view" aria-live="polite"></div>
+
+    <div class="view gutter" id="ex-view" hidden>
+      <div class="ex-meta-inline" id="ex-meta-inline"></div>
+      <div id="ex-sheet"></div>
+      <div class="banner" id="banner" role="status" hidden></div>
+    </div>
+
+    <div class="finish gutter" id="done" hidden>
+      <h2 id="done-title">Terminé</h2>
+      <div class="stats" id="done-stats"></div>
+      <div class="row">
+        <button class="btn primary" id="done-next">Exercice suivant</button>
+        <button class="btn" id="done-again">Recommencer</button>
+        <button class="btn" id="done-list">Exercices</button>
+      </div>
+      <p class="tip" id="done-tip">Ou appuie sur la barre d’espace pour continuer.</p>
+    </div>
+  </section>
+
+  <section class="machine" id="machine" aria-label="Clavier Perkins">
+    <div class="hand left">
+      <button class="key dot" data-dot="3" tabindex="-1" aria-label="Point 3">3</button>
+      <button class="key dot" data-dot="2" tabindex="-1" aria-label="Point 2">2</button>
+      <button class="key dot" data-dot="1" tabindex="-1" aria-label="Point 1">1</button>
+    </div>
+    <div class="center">
+      <div class="preview" id="preview"></div>
+      <div class="preview-label" id="preview-label"></div>
+      <div class="brand">Six Points</div>
+    </div>
+    <div class="hand right">
+      <button class="key dot" data-dot="4" tabindex="-1" aria-label="Point 4">4</button>
+      <button class="key dot" data-dot="5" tabindex="-1" aria-label="Point 5">5</button>
+      <button class="key dot" data-dot="6" tabindex="-1" aria-label="Point 6">6</button>
+    </div>
+    <div class="fnrow">
+      <button class="key fn" data-fn="enter" tabindex="-1" aria-label="Nouvelle ligne">
+        <svg viewBox="0 0 32 32"><path d="M26 7v8a4 4 0 0 1-4 4H7M12 13l-6 6 6 6"/></svg>
+      </button>
+      <button class="key space" data-fn="space" tabindex="-1" aria-label="Espace"></button>
+      <button class="key fn" data-fn="back" tabindex="-1" aria-label="Effacer le dernier signe">
+        <svg viewBox="0 0 32 32"><path d="M12 8h14v16H12l-8-8zM16 12l6 8M22 12l-6 8"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <div class="overlay gutter" id="picker" hidden>
+    <div class="overlay-head">
+      <h2>Exercices</h2>
+      <button class="btn small" id="picker-free">Mode libre</button>
+      <button class="ibtn" id="picker-close" aria-label="Revenir à l’exercice" title="Revenir à l’exercice">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="lessons" id="lesson-list"></div>
+    <div class="lessons" style="margin-top:10px">
+      <article class="lesson">
+        <h3>Mon texte</h3>
+        <p>Écris ou colle n’importe quel texte en français.</p>
+        <textarea id="custom-text" rows="3" placeholder="Le petit chat boit du lait."></textarea>
+        <p class="note" id="custom-note"></p>
+        <div class="lesson-foot"><button class="btn primary small" id="custom-go">Commencer</button></div>
+      </article>
+    </div>
+    <p class="overlay-foot">Chaque erreur arrête la frappe. « Indice » allume les touches à presser. Un exercice réussi devient vert.</p>
+  </div>
+
+  <div class="modal" id="settings" hidden>
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <h2 id="settings-title">Réglages</h2>
+      <label class="toggle"><span>Arrêt sur erreur<small>Bloque le clavier jusqu’à « Réessayer ».</small></span><input type="checkbox" id="set-stop"></label>
+      <label class="toggle"><span>Montrer le braille du modèle<small>Affiche en gris les points à taper.</small></span><input type="checkbox" id="set-braille"></label>
+      <label class="toggle"><span>Lettre pendant la frappe<small>Affiche la lettre avant de relâcher.</small></span><input type="checkbox" id="set-preview"></label>
+      <label class="toggle"><span>Son des touches</span><input type="checkbox" id="set-sound"></label>
+      <p class="keys">Sur ordinateur : <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> = points 3 2 1, <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> = points 4 5 6, <kbd>Espace</kbd>, <kbd>Entrée</kbd>, <kbd>⌫</kbd>.</p>
+      <p class="keys">Sur téléphone, tiens-le à l’horizontale. Sur iPhone, « Partager › Sur l’écran d’accueil » l’ouvre en plein écran.</p>
+      <button class="btn primary" id="settings-close">Fermer</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- French braille (non abrégé, CBFU) ---------- */
+  const M = (dots) => [...String(dots)].reduce((m, d) => m | (1 << (d - 1)), 0);
+  const dotList = (m) => [1, 2, 3, 4, 5, 6].filter((d) => m & (1 << (d - 1))).join('-');
+
+  const LETTERS = {
+    a: '1', b: '12', c: '14', d: '145', e: '15', f: '124', g: '1245', h: '125', i: '24', j: '245',
+    k: '13', l: '123', m: '134', n: '1345', o: '135', p: '1234', q: '12345', r: '1235', s: '234', t: '2345',
+    u: '136', v: '1236', x: '1346', y: '13456', z: '1356', w: '2456',
+    'ç': '12346', 'é': '123456', 'à': '12356', 'è': '2346', 'ù': '23456',
+    'â': '16', 'ê': '126', 'î': '146', 'ô': '1456', 'û': '156',
+    'ë': '1246', 'ï': '12456', 'ü': '1256', 'œ': '246',
+  };
+  const PUNCT = {
+    ',': '2', ';': '23', ':': '25', '.': '256', '?': '26', '!': '235', '"': '2356',
+    '(': '236', ')': '356', "'": '3', '-': '36', '/': '34', '*': '35', '@': '345',
+  };
+  // Antoine notation, preceded by the number sign (dot 6)
+  const DIGITS = { 1: '16', 2: '126', 3: '146', 4: '1456', 5: '156', 6: '1246', 7: '12456', 8: '1256', 9: '246', 0: '3456' };
+
+  const SPACE = 0, NL = -1, CAP = M('46'), NUM = M('6');
+  const CHAR2MASK = {}, MASK2CHAR = {}, DIGIT2MASK = {}, MASK2DIGIT = {};
+  for (const [c, d] of Object.entries({ ...LETTERS, ...PUNCT })) { CHAR2MASK[c] = M(d); MASK2CHAR[M(d)] = c; }
+  for (const [c, d] of Object.entries(DIGITS)) { DIGIT2MASK[c] = M(d); MASK2DIGIT[M(d)] = c; }
+  const isLetter = (c) => /\p{L}/u.test(c);
+
+  // Braille cells -> French, with capital and number signs applied
+  function decode(tokens) {
+    const out = [];
+    let cap = false, capsWord = false, num = false;
+    for (const m of tokens) {
+      if (m === NL) { out.push({ m, kind: 'nl' }); cap = capsWord = num = false; continue; }
+      if (m === SPACE) { out.push({ m, kind: 'space', label: ' ' }); cap = capsWord = num = false; continue; }
+      if (m === CAP) {
+        if (cap) { cap = false; capsWord = true; } else cap = true;
+        out.push({ m, kind: 'ind', label: 'maj' });
+        continue;
+      }
+      if (m === NUM) { num = true; out.push({ m, kind: 'ind', label: 'num' }); continue; }
+      if (num && MASK2DIGIT[m] !== undefined) { out.push({ m, kind: 'char', label: MASK2DIGIT[m] }); continue; }
+      num = false;
+      let c = MASK2CHAR[m];
+      if (c === undefined) { out.push({ m, kind: 'unk', label: '?' }); cap = false; continue; }
+      if ((cap || capsWord) && isLetter(c)) c = c.toUpperCase();
+      cap = false;
+      out.push({ m, kind: 'char', label: c });
+    }
+    return out;
+  }
+  const plainText = (decoded) => decoded.map((t) => (t.kind === 'nl' ? '\n' : t.kind === 'ind' ? '' : t.label)).join('');
+
+  function normalize(text) {
+    return text
+      .replace(/[’‘ʼ`]/g, "'")
+      .replace(/«[\s\u00a0\u202f]*/g, '"')
+      .replace(/[\s\u00a0\u202f]*»/g, '"')
+      .replace(/[“”„]/g, '"')
+      .replace(/[–—]/g, '-')
+      .replace(/…/g, '...')
+      .replace(/[\s  ]+/g, ' ')
+      .trim();
+  }
+
+  // French -> braille, one unit per character
+  function transcribe(text) {
+    const units = [], skipped = new Set();
+    let prevDigit = false;
+    for (const ch of normalize(text)) {
+      if (ch === ' ') { units.push({ ch, cells: [SPACE] }); prevDigit = false; continue; }
+      if (DIGIT2MASK[ch] !== undefined) {
+        units.push({ ch, cells: prevDigit ? [DIGIT2MASK[ch]] : [NUM, DIGIT2MASK[ch]] });
+        prevDigit = true;
+        continue;
+      }
+      prevDigit = false;
+      const lower = ch.toLowerCase();
+      if (isLetter(ch) && CHAR2MASK[lower] !== undefined) {
+        units.push({ ch, cells: ch !== lower ? [CAP, CHAR2MASK[lower]] : [CHAR2MASK[lower]] });
+      } else if (PUNCT[ch]) {
+        units.push({ ch, cells: [CHAR2MASK[ch]] });
+      } else {
+        skipped.add(ch);
+      }
+    }
+    return { units, skipped: [...skipped] };
+  }
+
+  function cellSVG(m, cls = '') {
+    let s = `<svg class="bc ${cls}" viewBox="0 0 20 30" aria-hidden="true">`;
+    for (let i = 0; i < 6; i++) {
+      const x = i < 3 ? 5 : 15, y = 5 + (i % 3) * 10;
+      s += m > 0 && m & (1 << i) ? `<circle class="on" cx="${x}" cy="${y}" r="3.7"/>` : `<circle class="off" cx="${x}" cy="${y}" r="1.2"/>`;
+    }
+    return s + '</svg>';
+  }
+
+  /* ---------- Lessons ---------- */
+  const signsOf = (chars) => [...chars].map((c) => [CHAR2MASK[c], c]);
+  const LESSONS = [
+    { id: 'aj', title: 'Lettres a à j', signs: signsOf('abcdefghij'),
+      items: ['a b c d e f g h i j', 'bac cage chef face', 'biche fiche hache aide', 'jade beige badge chic'] },
+    { id: 'kt', title: 'Lettres k à t', signs: signsOf('klmnopqrst'),
+      items: ['k l m n o p q r s t', 'le chat dort', 'la pomme est rose', 'le soir tombe dans le port', 'mon chien ronge son os'] },
+    { id: 'uz', title: 'Lettres u à z', signs: signsOf('uvwxyz'),
+      items: ['u v w x y z', 'une vue sur le lac', 'le taxi jaune roule vite', 'un lynx au zoo', 'le wagon file vers la ville'] },
+    { id: 'acc', title: 'Accents', signs: signsOf('éèàùçâêîôûëïüœ'),
+      items: ['é è à ù ç', 'le café de mon père', 'où est le garçon', 'â ê î ô û', 'la fête au château', 'un hôtel sur une île', 'ë ï ü œ', 'ma sœur a du maïs'] },
+    { id: 'maj', title: 'Majuscules', signs: [[CAP, 'maj']],
+      items: ['Paris', 'Marie et Paul', 'Lyon Genève Lausanne', 'Le Rhône coule vers la Méditerranée'] },
+    { id: 'pct', title: 'Ponctuation', signs: signsOf(`,;:.?!'-()"`),
+      items: ['Oui, merci.', 'Viens-tu? Non!', "l'école, l'été, l'île", 'Il pleut; je reste ici.', 'Elle a dit: "Bonjour" (enfin).'] },
+    { id: 'num', title: 'Chiffres', signs: [[NUM, 'num'], ...Object.keys(DIGITS).map((d) => [DIGIT2MASK[d], d])],
+      items: ['1 2 3 4 5 6 7 8 9 0', "J'ai 3 chats.", 'Il est 8 heures.', 'Le 14 juillet 1789.'] },
+    { id: 'fable', title: 'Le Corbeau et le Renard', signs: [],
+      items: ['Maître Corbeau, sur un arbre perché,', 'Tenait en son bec un fromage.', "Maître Renard, par l'odeur alléché,", 'Lui tint à peu près ce langage:'] },
+  ];
+
+  /* ---------- Storage ---------- */
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sixpoints.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('sixpoints.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
+  };
+  const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, sound: true }, store.get('settings', {}));
+  let freeTokens = store.get('free', null) ?? transcribe('Bonjour').units.flatMap((u) => u.cells);
+  let mode = 'free';
+  let ex = null;
+
+  /* ---------- DOM ---------- */
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const el = {
+    machine: $('#machine'), freeView: $('#free-view'), exView: $('#ex-view'), exSheet: $('#ex-sheet'),
+    banner: $('#banner'), meta: $('#ex-meta'), metaInline: $('#ex-meta-inline'),
+    preview: $('#preview'), previewLabel: $('#preview-label'),
+    done: $('#done'), picker: $('#picker'), settings: $('#settings'), toast: $('#toast'),
+    space: $('.key.space'),
+  };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ---------- Sound ---------- */
+  let ac = null;
+  function audio() {
+    if (!settings.sound) return null;
+    try {
+      ac ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+    } catch { return null; }
+    return ac;
+  }
+  function tone(freq, dur, type, gain, when = 0) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } };
+  const sfx = {
+    key() { tone(190, 0.06, 'triangle', 0.12); tone(2400, 0.012, 'square', 0.02); },
+    err() { tone(170, 0.14, 'square', 0.06); tone(130, 0.2, 'square', 0.05, 0.12); buzz([60, 40, 60]); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, 'triangle', 0.08, i * 0.09)); },
+  };
+
+  let wakeLock = null;
+  async function keepAwake() {
+    if (wakeLock || !navigator.wakeLock) return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } catch { /* refused */ }
+  }
+
+  function toast(msg) {
+    el.toast.textContent = msg;
+    el.toast.hidden = false;
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => { el.toast.hidden = true; }, 1600);
+  }
+
+  /* ---------- Chord engine (Perkins: the sign is written when every key is released) ---------- */
+  const sources = new Map();
+  let chordDots = 0, chordSpace = false;
+  let lastShown = null; // { m, label }
+
+  const keyFor = (k) => (/^\d$/.test(k) ? $(`.key[data-dot="${k}"]`) : $(`.key[data-fn="${k}"]`));
+  const refreshKey = (key) => key.classList.toggle('down', [...sources.values()].includes(key));
+  const blocked = () => mode === 'ex' && ex && (ex.locked || ex.done);
+  const overlayOpen = () => !el.picker.hidden || !el.settings.hidden;
+
+  function keyDown(src, key) {
+    if (!key || sources.has(src) || overlayOpen()) return;
+    const dot = +key.dataset.dot, fn = key.dataset.fn;
+    if (dot && blocked()) { nudgeBlocked(); return; }
+    if (fn === 'space' && mode === 'ex' && ex?.locked) { nudgeBlocked(); return; }
+    sources.set(src, key);
+    refreshKey(key);
+    if (dot) chordDots |= 1 << (dot - 1);
+    else if (fn === 'space') chordSpace = true;
+    else if (fn === 'back') onBack();
+    else if (fn === 'enter') onEnter();
+    renderPreview();
+  }
+
+  function keyUp(src) {
+    const key = sources.get(src);
+    if (!key) return;
+    sources.delete(src);
+    refreshKey(key);
+    const chordHeld = [...sources.values()].some((k) => k.dataset.dot || k.dataset.fn === 'space');
+    if (!chordHeld && (chordDots || chordSpace)) {
+      const m = chordDots || SPACE;
+      chordDots = 0; chordSpace = false;
+      onCell(m);
+    }
+  }
+
+  function releaseAll() {
+    sources.clear();
+    chordDots = 0; chordSpace = false;
+    $$('.key.down').forEach((k) => k.classList.remove('down'));
+    renderPreview();
+  }
+
+  el.machine.addEventListener('pointerdown', (e) => {
+    const key = e.target.closest('.key');
+    if (!key) return;
+    e.preventDefault();
+    audio(); keepAwake();
+    keyDown('p' + e.pointerId, key);
+  });
+  window.addEventListener('pointerup', (e) => keyUp('p' + e.pointerId));
+  window.addEventListener('pointercancel', (e) => keyUp('p' + e.pointerId));
+  // Keep iOS from zooming, selecting or running its three-finger gestures on the keys
+  for (const type of ['touchstart', 'touchmove', 'touchend']) {
+    el.machine.addEventListener(type, (e) => { e.preventDefault(); if (type === 'touchend') audio(); }, { passive: false });
+  }
+
+  const CODES = { KeyF: '1', KeyD: '2', KeyS: '3', KeyJ: '4', KeyK: '5', KeyL: '6', Space: 'space', Enter: 'enter', Backspace: 'back' };
+  window.addEventListener('keydown', (e) => {
+    if (e.target.closest?.('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Escape') { closeOverlays(); if (mode === 'ex' && !ex) setMode('free'); return; }
+    const k = CODES[e.code];
+    if (!k || overlayOpen()) return;
+    e.preventDefault();
+    if (e.repeat) return;
+    audio();
+    keyDown('k' + e.code, keyFor(k));
+  });
+  window.addEventListener('keyup', (e) => keyUp('k' + e.code));
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseAll();
+    else if (wakeLock === null && sources.size === 0) keepAwake();
+  });
+
+  // Label a cell in its context (after a capital or number sign)
+  function contextLabel(m) {
+    const before = mode === 'free' ? freeTokens : typedSoFar();
+    const t = decode([...before, m]).at(-1);
+    return t.kind === 'space' ? 'espace' : t.label;
+  }
+
+  function onCell(m) {
+    lastShown = { m, label: contextLabel(m) };
+    if (mode === 'free') {
+      freeTokens.push(m);
+      store.set('free', freeTokens);
+      sfx.key();
+      renderFree();
+    } else if (ex?.done) {
+      if (m === SPACE) (nextTarget() ? goNext() : restartEx());
+    } else if (ex) {
+      exInput(m);
+    }
+    renderPreview();
+  }
+
+  function onBack() {
+    if (mode !== 'free' || !freeTokens.length) return;
+    freeTokens.pop();
+    store.set('free', freeTokens);
+    lastShown = null;
+    sfx.key();
+    renderFree();
+  }
+
+  function onEnter() {
+    if (mode !== 'free') return;
+    freeTokens.push(NL);
+    store.set('free', freeTokens);
+    lastShown = null;
+    sfx.key();
+    renderFree();
+  }
+
+  function nudgeBlocked() {
+    if (!ex?.locked) return;
+    el.banner.animate?.([{ translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }], { duration: 200 });
+  }
+
+  /* ---------- Exercises ---------- */
+  function typedSoFar() {
+    if (!ex) return [];
+    const cur = ex.units[ex.u];
+    return ex.units.slice(0, ex.u).flatMap((u) => u.cells).concat(cur ? cur.cells.slice(0, ex.c) : []);
+  }
+
+  function lessonAt(li) {
+    if (li === 'custom') return { id: 'custom', title: 'Mon texte', items: [store.get('custom', '')] };
+    return LESSONS[li];
+  }
+
+  function startEx(li, i) {
+    const lesson = lessonAt(li);
+    const { units } = transcribe(lesson.items[i]);
+    if (!units.length) return;
+    ex = {
+      li, i, units, title: lesson.title, total: lesson.items.length, key: lesson.id + ':' + i,
+      u: 0, c: 0, errors: 0, hints: 0, hint: false, hinted: false, err: null, locked: false, done: false,
+      t0: null, t1: null, missed: new Set(),
+    };
+    lastShown = null;
+    closeOverlays();
+    setMode('ex');
+  }
+  const restartEx = () => ex && startEx(ex.li, ex.i);
+
+  function nextTarget() {
+    if (!ex || ex.li === 'custom') return null;
+    if (ex.i + 1 < LESSONS[ex.li].items.length) return [ex.li, ex.i + 1];
+    if (ex.li + 1 < LESSONS.length) return [ex.li + 1, 0];
+    return null;
+  }
+  function goNext() { const n = nextTarget(); if (n) startEx(...n); else openPicker(); }
+
+  function exInput(m) {
+    if (ex.locked || ex.done) return;
+    ex.t0 ??= performance.now();
+    const unit = ex.units[ex.u];
+    if (m === unit.cells[ex.c]) {
+      ex.err = null;
+      ex.c++;
+      if (ex.c === unit.cells.length) {
+        ex.u++; ex.c = 0; ex.hint = false; ex.hinted = false;
+      }
+      if (ex.u === ex.units.length) { finishEx(); return; }
+      sfx.key();
+    } else {
+      ex.errors++;
+      ex.err = m;
+      ex.missed.add(ex.u);
+      ex.locked = settings.stopOnError;
+      sfx.err();
+      el.machine.classList.remove('flash');
+      void el.machine.offsetWidth;
+      el.machine.classList.add('flash');
+    }
+    renderEx();
+  }
+
+  function showHint() {
+    if (!ex || ex.done) return;
+    if (!ex.hinted) { ex.hints++; ex.hinted = true; }
+    ex.hint = true;
+    ex.err = null;
+    ex.locked = false;
+    renderEx();
+  }
+
+  function finishEx() {
+    ex.done = true;
+    ex.t1 = performance.now();
+    const cells = ex.units.reduce((n, u) => n + u.cells.length, 0);
+    const accuracy = Math.round((100 * cells) / (cells + ex.errors));
+    const progress = store.get('progress', {});
+    if (ex.li !== 'custom') { progress[ex.key] = Math.max(progress[ex.key] ?? 0, accuracy); store.set('progress', progress); }
+    const secs = Math.round(((ex.t1 - (ex.t0 ?? ex.t1)) / 1000));
+    const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    $('#done-title').textContent = ex.errors === 0 ? 'Parfait, aucune erreur' : accuracy >= 90 ? 'Bravo, c’est réussi' : 'Terminé';
+    $('#done-stats').innerHTML = [
+      ['Précision', accuracy + ' %'], ['Erreurs', ex.errors], ['Indices', ex.hints], ['Temps', time],
+    ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+    const next = nextTarget();
+    $('#done-next').hidden = !next;
+    $('#done-tip').textContent = next ? 'Ou appuie sur la barre d’espace pour passer à la suite.' : 'Ou appuie sur la barre d’espace pour recommencer.';
+    sfx.win();
+    renderEx();
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderPreview() {
+    let m, label;
+    const live = chordDots || chordSpace;
+    if (live) { m = chordDots; label = settings.preview ? contextLabel(chordDots || SPACE) : ''; }
+    else if (lastShown) { m = lastShown.m; label = lastShown.label; }
+    else { m = 0; label = ''; }
+    if (mode === 'ex' && ex?.locked && !live) label = 'en pause';
+    el.preview.innerHTML = cellSVG(m);
+    el.previewLabel.textContent = label;
+    el.previewLabel.classList.toggle('small', label.length > 2);
+  }
+
+  function renderFree() {
+    const decoded = decode(freeTokens);
+    if (!decoded.length) {
+      el.freeView.innerHTML = `<p class="empty"><b>Pose tes doigts sur les touches.</b> Appuie sur plusieurs touches ensemble, puis relâche-les toutes : le signe s’écrit ici, avec sa lettre en dessous. Points 4-6 = majuscule, point 6 = nombre.</p>`;
+      return;
+    }
+    const cell = (t) => `<span class="cell ${t.kind}">${cellSVG(t.m)}<b>${esc(t.label)}</b></span>`;
+    const wrap = (s) => (s ? `<span class="w">${s}</span>` : '');
+    let html = '', word = '';
+    for (const t of decoded) {
+      if (t.kind === 'space') { html += wrap(word) + '<span class="cell space"></span>'; word = ''; }
+      else if (t.kind === 'nl') { html += wrap(word) + '<span class="nl"></span>'; word = ''; }
+      else word += cell(t);
+    }
+    html += wrap(word + '<span class="caret"></span>');
+    el.freeView.innerHTML = `<div class="cells">${html}</div>`;
+    el.freeView.scrollTop = el.freeView.scrollHeight;
+  }
+
+  function unitLabel(ch) { return ch === ' ' ? 'Espace' : `« ${esc(ch)} »`; }
+
+  function renderEx() {
+    if (!ex) return;
+    let html = '', word = '';
+    ex.units.forEach((un, i) => {
+      const state = i < ex.u ? 'done' : i === ex.u && !ex.done ? 'cur' : 'todo';
+      let cls = `u ${state}`;
+      if (un.ch === ' ') cls += ' space';
+      if (ex.missed.has(i)) cls += ' missed';
+      if (state === 'cur' && ex.err !== null) cls += ' err';
+      const cells = un.cells.map((m, j) => {
+        const typed = i < ex.u || (i === ex.u && j < ex.c) || ex.done;
+        return typed ? cellSVG(m) : cellSVG(settings.showBraille ? m : 0, 'ghost');
+      }).join('');
+      const ch = un.ch === ' ' ? '<span class="spk"></span>' : esc(un.ch);
+      const unit = `<span class="${cls}"><span class="ch">${ch}</span><span class="cs">${cells}</span></span>`;
+      if (un.ch === ' ') { html += `<span class="w">${word}</span>${unit}`; word = ''; }
+      else word += unit;
+    });
+    html += `<span class="w">${word}</span>`;
+    el.exSheet.innerHTML = `<div class="units">${html}</div>`;
+
+    const cur = el.exSheet.querySelector('.u.cur');
+    if (cur) {
+      const top = cur.offsetTop, bottom = top + cur.offsetHeight, s = el.exSheet;
+      if (top < s.scrollTop) s.scrollTop = top - 4;
+      else if (bottom > s.scrollTop + s.clientHeight) s.scrollTop = bottom - s.clientHeight + 4;
+    }
+
+    const metaHTML = `<b>${esc(ex.title)}</b> · ${ex.li === 'custom' ? '' : `exercice ${ex.i + 1}/${ex.total} · `}${Math.min(ex.u, ex.units.length)}/${ex.units.length} · ${ex.errors} erreur${ex.errors > 1 ? 's' : ''}`;
+    el.meta.innerHTML = metaHTML;
+    el.metaInline.innerHTML = metaHTML;
+    $('#btn-hint').setAttribute('aria-pressed', String(ex.hint));
+    $('#btn-hint').disabled = ex.done;
+    el.done.hidden = !ex.done;
+
+    renderBanner();
+    renderKeyHints();
+    renderPreview();
+  }
+
+  function renderBanner() {
+    const b = el.banner;
+    if (!ex || ex.done || (ex.err === null && !ex.hint)) { b.hidden = true; return; }
+    const unit = ex.units[ex.u];
+    b.hidden = false;
+    if (ex.err !== null) {
+      b.className = 'banner err';
+      const typed = contextLabelForError(ex.err);
+      b.innerHTML = `<span class="msg">Tu as tapé ${cellSVG(ex.err)} <b>${typed}</b> · il fallait ${unitLabel(unit.ch)}${unit.cells.length > 1 ? ` (signe ${ex.c + 1} sur ${unit.cells.length})` : ''}</span>
+        <span class="acts"><button class="btn small" data-act="hint">Montrer</button>${ex.locked ? '<button class="btn small primary" data-act="retry">Réessayer</button>' : ''}</span>`;
+    } else {
+      b.className = 'banner hint';
+      const parts = unit.cells.map((m, j) => {
+        const role = m === CAP && unit.cells.length > 1 ? 'majuscule ' : m === NUM && unit.cells.length > 1 ? 'nombre ' : '';
+        const dots = m === SPACE ? 'barre d’espace' : `points ${dotList(m)}`;
+        return `<span class="hc${j === ex.c && unit.cells.length > 1 ? ' now' : ''}">${cellSVG(m)}<span class="dots">${role}${dots}</span></span>`;
+      });
+      b.innerHTML = `<span class="msg"><b>${unitLabel(unit.ch)}</b> ${parts.join(' puis ')}</span>`;
+    }
+  }
+
+  function contextLabelForError(m) {
+    if (m === SPACE) return 'un espace';
+    if (m === CAP) return 'le signe majuscule';
+    if (m === NUM) return 'le signe nombre';
+    const t = decode([...typedSoFar(), m]).at(-1);
+    return t.kind === 'unk' ? `points ${dotList(m)}` : `« ${esc(t.label)} »`;
+  }
+
+  function renderKeyHints() {
+    let mask = null;
+    if (mode === 'ex' && ex && !ex.done && ex.hint) mask = ex.units[ex.u].cells[ex.c];
+    $$('.key.dot').forEach((k) => k.classList.toggle('hint', mask !== null && !!(mask & (1 << (k.dataset.dot - 1)))));
+    el.space.classList.toggle('hint', mask === SPACE);
+    el.machine.classList.toggle('locked', mode === 'ex' && !!ex?.locked);
+  }
+
+  function setMode(m) {
+    mode = m;
+    releaseAll();
+    $('#tab-free').setAttribute('aria-selected', String(m === 'free'));
+    $('#tab-ex').setAttribute('aria-selected', String(m === 'ex'));
+    el.freeView.hidden = m !== 'free';
+    el.exView.hidden = m !== 'ex';
+    for (const id of ['#btn-copy', '#btn-clear', '#free-spacer']) $(id).hidden = m !== 'free';
+    for (const id of ['#btn-hint', '#btn-restart', '#btn-lessons', '#ex-meta']) $(id).hidden = m !== 'ex';
+    if (m === 'free') { el.done.hidden = true; lastShown = null; renderFree(); renderKeyHints(); renderPreview(); }
+    else if (ex) renderEx();
+    else openPicker();
+  }
+
+  /* ---------- Picker, settings ---------- */
+  function renderPicker() {
+    const progress = store.get('progress', {});
+    $('#lesson-list').innerHTML = LESSONS.map((l, li) => {
+      const signs = l.signs.map(([m, c]) => `<span class="sign">${cellSVG(m)}${esc(c)}</span>`).join('');
+      const chips = l.items.map((t, i) => {
+        const p = progress[l.id + ':' + i];
+        return `<button class="chip${p != null ? ' done' : ''}" data-li="${li}" data-i="${i}" title="${esc(t)}" aria-label="Exercice ${i + 1}${p != null ? `, réussi à ${p} %` : ''}">${i + 1}</button>`;
+      }).join('');
+      const doneCount = l.items.filter((_, i) => progress[l.id + ':' + i] != null).length;
+      return `<article class="lesson">
+        <h3>${esc(l.title)}</h3>
+        ${signs ? `<div class="signs">${signs}</div>` : `<p>${esc(l.items[0])}…</p>`}
+        <div class="lesson-foot">${chips}<button class="btn primary small" data-li="${li}" data-start>${doneCount && doneCount < l.items.length ? 'Continuer' : 'Commencer'}</button></div>
+      </article>`;
+    }).join('');
+  }
+
+  function openPicker() {
+    renderPicker();
+    updateCustomNote();
+    $('#picker-close').hidden = !ex;
+    el.picker.hidden = false;
+    releaseAll();
+  }
+  function closeOverlays() { el.picker.hidden = true; el.settings.hidden = true; }
+
+  $('#lesson-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const li = +btn.dataset.li;
+    if (btn.hasAttribute('data-start')) {
+      const progress = store.get('progress', {});
+      const items = LESSONS[li].items;
+      const first = items.findIndex((_, i) => progress[LESSONS[li].id + ':' + i] == null);
+      startEx(li, first === -1 ? 0 : first);
+    } else {
+      startEx(li, +btn.dataset.i);
+    }
+  });
+
+  const customText = $('#custom-text');
+  customText.value = store.get('custom', '');
+  function updateCustomNote() {
+    const { units, skipped } = transcribe(customText.value);
+    const note = $('#custom-note');
+    note.classList.toggle('warn', skipped.length > 0);
+    note.textContent = skipped.length
+      ? `Ces signes seront ignorés : ${skipped.join(' ')}`
+      : units.length ? `${units.length} signes à taper.` : '';
+    $('#custom-go').disabled = !units.length;
+  }
+  customText.addEventListener('input', () => { store.set('custom', customText.value); updateCustomNote(); });
+  $('#custom-go').addEventListener('click', () => startEx('custom', 0));
+
+  $('#picker-free').addEventListener('click', () => { closeOverlays(); setMode('free'); });
+  $('#picker-close').addEventListener('click', () => { closeOverlays(); setMode('ex'); });
+
+  const toggles = { '#set-stop': 'stopOnError', '#set-braille': 'showBraille', '#set-preview': 'preview', '#set-sound': 'sound' };
+  for (const [sel, key] of Object.entries(toggles)) {
+    const input = $(sel);
+    input.checked = settings[key];
+    input.addEventListener('change', () => {
+      settings[key] = input.checked;
+      store.set('settings', settings);
+      if (key === 'stopOnError' && ex && !input.checked) ex.locked = false;
+      if (mode === 'ex' && ex) renderEx();
+    });
+  }
+  $('#btn-settings').addEventListener('click', () => { releaseAll(); el.settings.hidden = false; });
+  $('#settings-close').addEventListener('click', () => { el.settings.hidden = true; });
+  el.settings.addEventListener('click', (e) => { if (e.target === el.settings) el.settings.hidden = true; });
+
+  /* ---------- Bar ---------- */
+  $('#tab-free').addEventListener('click', () => { closeOverlays(); setMode('free'); });
+  $('#tab-ex').addEventListener('click', () => { if (mode === 'ex' && ex) openPicker(); else setMode('ex'); });
+  $('#btn-hint').addEventListener('click', () => { if (ex?.hint) { ex.hint = false; renderEx(); } else showHint(); });
+  $('#btn-restart').addEventListener('click', restartEx);
+  $('#btn-lessons').addEventListener('click', openPicker);
+  el.banner.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'hint') showHint();
+    if (act === 'retry') { ex.err = null; ex.locked = false; renderEx(); }
+  });
+  $('#done-next').addEventListener('click', goNext);
+  $('#done-again').addEventListener('click', restartEx);
+  $('#done-list').addEventListener('click', openPicker);
+
+  $('#btn-copy').addEventListener('click', () => {
+    const text = plainText(decode(freeTokens));
+    if (!text) { toast('Rien à copier'); return; }
+    navigator.clipboard?.writeText(text).then(() => toast('Texte copié'), () => toast('Copie impossible')) ?? toast('Copie impossible');
+  });
+  const clearBtn = $('#btn-clear');
+  const clearIcon = clearBtn.innerHTML;
+  clearBtn.addEventListener('click', () => {
+    if (clearBtn.classList.contains('confirm')) {
+      freeTokens = [];
+      store.set('free', freeTokens);
+      lastShown = null;
+      renderFree(); renderPreview();
+      resetClear();
+      return;
+    }
+    clearBtn.classList.add('confirm');
+    clearBtn.textContent = 'Tout effacer ?';
+    clearTimeout(resetClear.t);
+    resetClear.t = setTimeout(resetClear, 3000);
+  });
+  function resetClear() { clearBtn.classList.remove('confirm'); clearBtn.innerHTML = clearIcon; }
+
+  setMode('free');
+})();
+</script>
+</body>
+</html>
