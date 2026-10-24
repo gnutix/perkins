@@ -1693,6 +1693,29 @@ div.toggle { cursor: default; }
   ];
   READ_SETS.push({ id: 'all', label: 'Tout', title: 'Toutes les lettres', chars: READ_SETS.map((s) => s.chars).join('') });
   const DRILL = 20;
+  // Word rounds: common words (WORDS) made only of the letters taught up to that lesson, drawn anew
+  // each time, so she never reads a text she has just typed in Exercices
+  const READ_WORDS = [
+    { id: 'aj', label: 'a à j', upTo: 0 },
+    { id: 'at', label: 'jusqu’à t', upTo: 1 },
+    { id: 'az', label: 'jusqu’à z', upTo: 2 },
+    { id: 'acc', label: 'Accents', upTo: 3 },
+    { id: 'maj', label: 'Majuscules', upTo: 3, caps: true },
+    { id: 'pct', label: 'Ponctuation', upTo: 3, caps: true, punct: true },
+    { id: 'num', label: 'Chiffres', upTo: 3, caps: true, punct: true, num: true },
+  ];
+  const READ_LEN = 50;
+  // The rest of « Le Corbeau et le Renard », after the four lines typed in Exercices, two lines at a time
+  const FABLE_READ = [
+    '"Hé! bonjour, Monsieur du Corbeau. Que vous êtes joli! que vous me semblez beau!',
+    'Sans mentir, si votre ramage Se rapporte à votre plumage,',
+    'Vous êtes le Phénix des hôtes de ces bois." À ces mots le Corbeau ne se sent pas de joie;',
+    'Et pour montrer sa belle voix, Il ouvre un large bec, laisse tomber sa proie.',
+    'Le Renard s\'en saisit, et dit: "Mon bon Monsieur, Apprenez que tout flatteur',
+    'Vit aux dépens de celui qui l\'écoute: Cette leçon vaut bien un fromage, sans doute."',
+    'Le Corbeau, honteux et confus, Jura, mais un peu tard, qu\'on ne l\'y prendrait plus.',
+  ];
+  const oneOf = (a) => a[Math.floor(Math.random() * a.length)];
   // iOS types curly quotes and long dashes; the texts have plain ones (see normalize)
   const TYPO = { '’': "'", '‘': "'", 'ʼ': "'", '`': "'", '«': '"', '»': '"', '“': '"', '”': '"', '„': '"', '–': '-', '—': '-', ' ': ' ', ' ': ' ' };
   const readIn = $('#read-input'), readSheet = $('#read-sheet'), readPick = $('#read-pick'), readRun = $('#read-run'), readDone = $('#read-done');
@@ -1716,9 +1739,39 @@ div.toggle { cursor: default; }
     const s = READ_SETS[si];
     beginRead({ si, drill: true, key: 'letters:' + s.id, title: s.title, units: letterRound(s.chars) });
   }
-  function startReadText(li, i) {
-    const l = LESSONS[li];
-    beginRead({ li, i, key: l.id + ':' + i, title: l.title, total: l.items.length, units: transcribe(l.items[i]).units });
+  function wordRound(lv) {
+    const letters = new Set(LESSONS.slice(0, lv.upTo + 1).flatMap((l) => l.signs.map(([, c]) => c)));
+    const pool = WORDS.filter((w) => [...w].every((c) => letters.has(c)));
+    const words = [];
+    let bag = [];
+    while (words.join(' ').length < READ_LEN) {
+      if (!bag.length) bag = shuffle(pool);
+      const w = bag.pop();
+      if (w !== words.at(-1)) words.push(w);
+    }
+    if (lv.num) {
+      for (let n = 1 + Math.floor(Math.random() * 2); n--;) {
+        const at = 1 + Math.floor(Math.random() * (words.length - 1));
+        words.splice(at, 0, String(Math.floor(Math.random() * (Math.random() < 0.5 ? 100 : 2100))));
+      }
+    }
+    let text = '', start = true;
+    words.forEach((w, i) => {
+      if (lv.caps && (start || Math.random() < 0.15)) w = w[0].toUpperCase() + w.slice(1);
+      if (lv.caps && w.length > 2 && Math.random() < 0.08) w = w.toUpperCase();
+      const p = !lv.punct ? '' : i === words.length - 1 ? oneOf(['.', '.', '?', '!'])
+        : Math.random() < 0.25 ? oneOf([',', ',', '.', '?', '!', ';', ':']) : '';
+      text += (i ? ' ' : '') + w + p;
+      start = lv.punct && /[.?!]/.test(p);
+    });
+    return text;
+  }
+  function startReadWords(wi) {
+    const lv = READ_WORDS[wi];
+    beginRead({ wi, key: 'words:' + lv.id, title: 'Mots · ' + lv.label, units: transcribe(wordRound(lv)).units });
+  }
+  function startReadFable(fi) {
+    beginRead({ fi, key: 'fable:' + fi, title: 'La suite de la fable', total: FABLE_READ.length, units: transcribe(FABLE_READ[fi]).units });
   }
   function beginRead(round) {
     rd = { ...round, u: 0, errors: 0, shown: 0, missed: new Set(), revealed: new Set(), wrong: null, t0: null, done: false, result: null };
@@ -1726,12 +1779,11 @@ div.toggle { cursor: default; }
     renderRead();
     focusInput();
   }
-  const readAgain = () => (rd.drill ? startReadLetters(rd.si) : startReadText(rd.li, rd.i));
+  const readAgain = () => (rd.drill ? startReadLetters(rd.si) : rd.wi != null ? startReadWords(rd.wi) : startReadFable(rd.fi));
   function readNext() {
     if (rd.drill) return rd.si + 1 < READ_SETS.length ? () => startReadLetters(rd.si + 1) : null;
-    if (rd.i + 1 < LESSONS[rd.li].items.length) return () => startReadText(rd.li, rd.i + 1);
-    if (rd.li + 1 < LESSONS.length) return () => startReadText(rd.li + 1, 0);
-    return null;
+    if (rd.wi != null) return rd.wi + 1 < READ_WORDS.length ? () => startReadWords(rd.wi + 1) : null;
+    return rd.fi + 1 < FABLE_READ.length ? () => startReadFable(rd.fi + 1) : null;
   }
   const readGoNext = () => (readNext() ?? readAgain)();
 
@@ -1872,7 +1924,7 @@ div.toggle { cursor: default; }
     readSheet.innerHTML = `<div class="runits${rd.drill ? ' drill' : ''}">${html}</div>`;
     readScroll();
 
-    const meta = `<b>${esc(rd.title)}</b> · ${rd.drill ? '' : `texte ${rd.i + 1}/${rd.total} · `}${rd.u}/${rd.units.length} · ${rd.errors} erreur${rd.errors > 1 ? 's' : ''}`;
+    const meta = `<b>${esc(rd.title)}</b> · ${rd.fi != null ? `passage ${rd.fi + 1}/${rd.total} · ` : ''}${rd.u}/${rd.units.length} · ${rd.errors} erreur${rd.errors > 1 ? 's' : ''}`;
     $('#read-meta').innerHTML = meta;
     $('#read-meta-inline').innerHTML = meta;
     $('#read-show').disabled = rd.done;
@@ -1885,6 +1937,7 @@ div.toggle { cursor: default; }
     ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
     $('#read-done-tip').textContent = !prev ? '' : better ? 'Nouveau record.' : `Ton record : ${prev.acc} % en ${clock(prev.secs)}.`;
     $('#read-next').hidden = !readNext();
+    $('#read-again').textContent = rd.wi != null ? 'Autres mots' : 'Recommencer';
   }
 
   function renderReadPick() {
@@ -1893,19 +1946,15 @@ div.toggle { cursor: default; }
       const b = best['letters:' + s.id];
       return `<button class="btn small" data-set="${si}">${esc(s.label)}${b ? `<small>${b.acc} %</small>` : ''}</button>`;
     }).join('');
-    const texts = LESSONS.map((l, li) => {
-      const signs = l.signs.map(([m, c]) => `<span class="sign">${cellSVG(m)}${esc(c)}</span>`).join('');
-      const chips = l.items.map((_, i) => {
-        const b = best[l.id + ':' + i];
-        return `<button class="chip${b ? ' done' : ''}" data-li="${li}" data-i="${i}" aria-label="Texte ${i + 1}${b ? `, lu à ${b.acc} %` : ''}">${i + 1}</button>`;
-      }).join('');
-      const doneCount = l.items.filter((_, i) => best[l.id + ':' + i]).length;
-      return `<article class="lesson">
-        <h3>${esc(l.title)}</h3>
-        ${signs ? `<div class="signs">${signs}</div>` : ''}
-        <div class="lesson-foot">${chips}<button class="btn primary small" data-li="${li}" data-start>${doneCount && doneCount < l.items.length ? 'Continuer' : 'Commencer'}</button></div>
-      </article>`;
+    const words = READ_WORDS.map((lv, wi) => {
+      const b = best['words:' + lv.id];
+      return `<button class="btn small" data-words="${wi}">${esc(lv.label)}${b ? `<small>${b.acc} %</small>` : ''}</button>`;
     }).join('');
+    const fable = FABLE_READ.map((_, fi) => {
+      const b = best['fable:' + fi];
+      return `<button class="chip${b ? ' done' : ''}" data-fable="${fi}" aria-label="Passage ${fi + 1}${b ? `, lu à ${b.acc} %` : ''}">${fi + 1}</button>`;
+    }).join('');
+    const fableDone = FABLE_READ.filter((_, fi) => best['fable:' + fi]).length;
     readPick.innerHTML = `<div class="overlay-head"><h2>Lecture</h2>${rd ? '<button class="btn small" data-act="resume">Reprendre</button>' : ''}</div>
       <p class="read-intro">Lis le braille, puis écris ce que tu lis avec le clavier du téléphone. Une lettre juste passe au vert, une erreur est refusée.</p>
       <div class="lessons">
@@ -1914,7 +1963,16 @@ div.toggle { cursor: default; }
           <p>${DRILL} signes, un à la fois. Écris la lettre, la suivante arrive toute seule.</p>
           <div class="read-sets">${sets}</div>
         </article>
-        ${texts}
+        <article class="lesson">
+          <h3>Mots au hasard</h3>
+          <p>Des mots courants, tirés au hasard à chaque fois, avec seulement les lettres vues jusqu’à ce niveau.</p>
+          <div class="read-sets">${words}</div>
+        </article>
+        <article class="lesson">
+          <h3>Le Corbeau et le Renard, la suite</h3>
+          <p>La fin de la fable, après les quatre vers des exercices.</p>
+          <div class="lesson-foot">${fable}<button class="btn primary small" data-fable-start>${fableDone && fableDone < FABLE_READ.length ? 'Continuer' : 'Commencer'}</button></div>
+        </article>
       </div>
       <p class="overlay-foot">Pour un accent, garde le doigt sur la lettre (é, è, à…). Le signe maj annonce une majuscule, num un chiffre. À la verticale, le clavier laisse plus de place au braille.</p>`;
   }
@@ -1929,13 +1987,14 @@ div.toggle { cursor: default; }
   readPick.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
-    const li = +b.dataset.li;
     if (b.dataset.act === 'resume') showReadPick(false);
     else if (b.dataset.set) startReadLetters(+b.dataset.set);
-    else if (b.hasAttribute('data-start')) {
+    else if (b.dataset.words) startReadWords(+b.dataset.words);
+    else if (b.dataset.fable) startReadFable(+b.dataset.fable);
+    else if (b.hasAttribute('data-fable-start')) {
       const best = store.get('reading', {});
-      startReadText(li, Math.max(0, LESSONS[li].items.findIndex((_, i) => !best[LESSONS[li].id + ':' + i])));
-    } else startReadText(li, +b.dataset.i);
+      startReadFable(Math.max(0, FABLE_READ.findIndex((_, fi) => !best['fable:' + fi])));
+    }
   });
   $('#read-show').addEventListener('click', () => {
     if (!rd || rd.done) return;
