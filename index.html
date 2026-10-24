@@ -511,6 +511,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       <label class="toggle"><span>Arrêt sur erreur<small>Bloque le clavier jusqu’à « Réessayer ».</small></span><input type="checkbox" id="set-stop"></label>
       <label class="toggle"><span>Montrer le braille du modèle<small>Affiche en gris les points à taper.</small></span><input type="checkbox" id="set-braille"></label>
       <label class="toggle"><span>Lettre pendant la frappe<small>Affiche la lettre avant de relâcher.</small></span><input type="checkbox" id="set-preview"></label>
+      <label class="toggle"><span>Retirer un point en relâchant sa touche<small>Si les autres touches restent enfoncées. Sur une vraie Perkins, le point est déjà embossé.</small></span><input type="checkbox" id="set-lift"></label>
       <label class="toggle"><span>Son des touches</span><input type="checkbox" id="set-sound"></label>
       <p class="keys">Sur ordinateur : <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> = points 3 2 1, <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> = points 4 5 6, <kbd>Espace</kbd>, <kbd>Entrée</kbd>, <kbd>⌫</kbd>.</p>
       <p class="keys">Sur téléphone, tiens-le à l’horizontale. Sur iPhone, « Partager › Sur l’écran d’accueil » l’ouvre en plein écran.</p>
@@ -574,8 +575,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       if (num && MASK2DIGIT[m] !== undefined) { out.push({ m, kind: 'char', label: MASK2DIGIT[m] }); continue; }
       num = false;
       let c = MASK2CHAR[m];
-      if (c === undefined) { out.push({ m, kind: 'unk', label: '?' }); cap = false; continue; }
-      if ((cap || capsWord) && isLetter(c)) c = c.toUpperCase();
+      if (c === undefined) { out.push({ m, kind: 'unk', label: '?' }); cap = capsWord = false; continue; }
+      if (!isLetter(c)) capsWord = false;
+      else if (cap || capsWord) c = c.toUpperCase();
       cap = false;
       out.push({ m, kind: 'char', label: c });
     }
@@ -598,24 +600,39 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   // French -> braille, one unit per character
   function transcribe(text) {
     const units = [], skipped = new Set();
+    const chars = [...normalize(text)];
+    const known = (c) => isLetter(c) && CHAR2MASK[c.toLowerCase()] !== undefined;
+    const isUpper = (c) => c !== c.toLowerCase();
+    // A word entirely in capitals takes the capital sign twice, once, before its first letter
+    const capsWord = new Set();
+    for (let i = 0; i < chars.length;) {
+      if (!known(chars[i])) { i++; continue; }
+      let j = i;
+      while (j < chars.length && known(chars[j])) j++;
+      if (j - i > 1 && chars.slice(i, j).every(isUpper)) for (let k = i; k < j; k++) capsWord.add(k);
+      i = j;
+    }
     let prevDigit = false;
-    for (const ch of normalize(text)) {
-      if (ch === ' ') { units.push({ ch, cells: [SPACE] }); prevDigit = false; continue; }
+    chars.forEach((ch, i) => {
+      if (ch === ' ') { units.push({ ch, cells: [SPACE] }); prevDigit = false; return; }
       if (DIGIT2MASK[ch] !== undefined) {
         units.push({ ch, cells: prevDigit ? [DIGIT2MASK[ch]] : [NUM, DIGIT2MASK[ch]] });
         prevDigit = true;
-        continue;
+        return;
       }
       prevDigit = false;
-      const lower = ch.toLowerCase();
-      if (isLetter(ch) && CHAR2MASK[lower] !== undefined) {
-        units.push({ ch, cells: ch !== lower ? [CAP, CHAR2MASK[lower]] : [CHAR2MASK[lower]] });
+      if (known(ch)) {
+        const m = CHAR2MASK[ch.toLowerCase()];
+        const cells = capsWord.has(i)
+          ? (capsWord.has(i - 1) ? [m] : [CAP, CAP, m])
+          : (isUpper(ch) ? [CAP, m] : [m]);
+        units.push({ ch, cells });
       } else if (PUNCT[ch]) {
         units.push({ ch, cells: [CHAR2MASK[ch]] });
       } else {
         skipped.add(ch);
       }
-    }
+    });
     return { units, skipped: [...skipped] };
   }
 
@@ -640,7 +657,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     { id: 'acc', title: 'Accents', signs: signsOf('éèàùçâêîôûëïüœ'),
       items: ['é è à ù ç', 'le café de mon père', 'où est le garçon', 'â ê î ô û', 'la fête au château', 'un hôtel sur une île', 'ë ï ü œ', 'ma sœur a du maïs'] },
     { id: 'maj', title: 'Majuscules', signs: [[CAP, 'maj']],
-      items: ['Paris', 'Marie et Paul', 'Lyon Genève Lausanne', 'Le Rhône coule vers la Méditerranée'] },
+      items: ['Paris', 'Marie et Paul', 'Lyon Genève Lausanne', 'Le Rhône coule vers la Méditerranée', 'le train des CFF', 'BONJOUR Marie'] },
     { id: 'pct', title: 'Ponctuation', signs: signsOf(`,;:.?!'-()"`),
       items: ['Oui, merci.', 'Viens-tu? Non!', "l'école, l'été, l'île", 'Il pleut; je reste ici.', 'Elle a dit: "Bonjour" (enfin).'] },
     { id: 'num', title: 'Chiffres', signs: [[NUM, 'num'], ...Object.keys(DIGITS).map((d) => [DIGIT2MASK[d], d])],
@@ -654,7 +671,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     get(k, d) { try { const v = localStorage.getItem('sixpoints.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem('sixpoints.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
-  const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, sound: true, brailleSize: 100, frSize: 100 }, store.get('settings', {}));
+  const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, liftToFix: false, sound: true, brailleSize: 100, frSize: 100 }, store.get('settings', {}));
   let freeTokens = store.get('free', null) ?? transcribe('Bonjour').units.flatMap((u) => u.cells);
   let mode = 'free';
   let ex = null;
@@ -713,6 +730,11 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   /* ---------- Chord engine (Perkins: the sign is written when every key is released) ---------- */
   const sources = new Map();
   let chordDots = 0, chordSpace = false;
+  // "Retirer un point en relâchant" setting: keys lifted within this delay of each other
+  // still count as lifted together; a key lifted earlier loses its dot
+  const RELEASE_GRACE = 150;
+  let releaseSnap = null, releaseAt = 0;
+  const heldDots = () => [...sources.values()].reduce((m, k) => (k.dataset.dot ? m | (1 << (k.dataset.dot - 1)) : m), 0);
   let lastShown = null; // { m, label }
 
   const keyFor = (k) => (/^\d$/.test(k) ? $(`.key[data-dot="${k}"]`) : $(`.key[data-fn="${k}"]`));
@@ -727,7 +749,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     if (fn === 'space' && mode === 'ex' && ex?.locked) { nudgeBlocked(); return; }
     sources.set(src, key);
     refreshKey(key);
-    if (dot) chordDots |= 1 << (dot - 1);
+    if (dot) { chordDots |= 1 << (dot - 1); releaseSnap = null; }
     else if (fn === 'space') chordSpace = true;
     else if (fn === 'back') onBack();
     else if (fn === 'enter') onEnter();
@@ -739,17 +761,26 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     if (!key) return;
     sources.delete(src);
     refreshKey(key);
+    // Like on a real Perkins, a dot is embossed once its key goes down, unless the setting says otherwise
+    if (settings.liftToFix && key.dataset.dot) {
+      const now = performance.now();
+      if (releaseSnap === null || now - releaseAt > RELEASE_GRACE) releaseSnap = chordDots;
+      releaseAt = now;
+      chordDots = heldDots();
+    }
     const chordHeld = [...sources.values()].some((k) => k.dataset.dot || k.dataset.fn === 'space');
-    if (!chordHeld && (chordDots || chordSpace)) {
-      const m = chordDots || SPACE;
-      chordDots = 0; chordSpace = false;
+    if (!chordHeld && (chordDots || chordSpace || releaseSnap)) {
+      const m = (settings.liftToFix ? releaseSnap : chordDots) || SPACE;
+      chordDots = 0; chordSpace = false; releaseSnap = null;
       onCell(m);
+    } else {
+      renderPreview();
     }
   }
 
   function releaseAll() {
     sources.clear();
-    chordDots = 0; chordSpace = false;
+    chordDots = 0; chordSpace = false; releaseSnap = null;
     $$('.key.down').forEach((k) => k.classList.remove('down'));
     renderPreview();
   }
@@ -936,7 +967,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   function renderFree() {
     const decoded = decode(freeTokens);
     if (!decoded.length) {
-      el.freeView.innerHTML = `<p class="empty"><b>Pose tes doigts sur les touches.</b> Appuie sur plusieurs touches ensemble, puis relâche-les toutes : le signe s’écrit ici, avec sa lettre en dessous. Points 4-6 = majuscule, point 6 = nombre.</p>`;
+      el.freeView.innerHTML = `<p class="empty"><b>Pose tes doigts sur les touches.</b> Appuie sur plusieurs touches ensemble, puis relâche-les toutes : le signe s’écrit ici, avec sa lettre en dessous. Points 4-6 = majuscule (deux fois : mot en majuscules), point 6 = nombre.</p>`;
       return;
     }
     const cell = (t) => `<span class="cell ${t.kind}">${cellSVG(t.m)}<b>${esc(t.label)}</b></span>`;
@@ -1010,10 +1041,15 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <span class="acts"><button class="btn small" data-act="hint">Montrer</button>${ex.locked ? '<button class="btn small primary" data-act="retry">Réessayer</button>' : ''}</span>`;
     } else {
       b.className = 'banner hint';
-      const parts = unit.cells.map((m, j) => {
-        const role = m === CAP && unit.cells.length > 1 ? 'majuscule ' : m === NUM && unit.cells.length > 1 ? 'nombre ' : '';
-        const dots = m === SPACE ? 'barre d’espace' : `points ${dotList(m)}`;
-        return `<span class="hc${j === ex.c && unit.cells.length > 1 ? ' now' : ''}">${cellSVG(m)}<span class="dots">${role}${dots}</span></span>`;
+      const wordCaps = unit.cells[0] === CAP && unit.cells[1] === CAP;
+      const steps = wordCaps ? [[0, 1], ...unit.cells.slice(2).map((_, j) => [j + 2])] : unit.cells.map((_, j) => [j]);
+      const parts = steps.map((idx) => {
+        const m = unit.cells[idx[0]], multi = unit.cells.length > 1;
+        const text = idx.length === 2 ? 'mot en majuscules, points 4-6 deux fois'
+          : m === SPACE ? 'barre d’espace'
+          : `${m === CAP && multi ? 'majuscule ' : m === NUM && multi ? 'nombre ' : ''}points ${dotList(m)}`;
+        const now = multi && idx.includes(ex.c);
+        return `<span class="hc${now ? ' now' : ''}">${idx.map((j) => cellSVG(unit.cells[j])).join('')}<span class="dots">${text}</span></span>`;
       });
       b.innerHTML = `<span class="msg"><b>${unitLabel(unit.ch)}</b> ${parts.join(' puis ')}</span>`;
     }
@@ -1107,7 +1143,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   $('#picker-free').addEventListener('click', () => { closeOverlays(); setMode('free'); });
   $('#picker-close').addEventListener('click', () => { closeOverlays(); setMode('ex'); });
 
-  const toggles = { '#set-stop': 'stopOnError', '#set-braille': 'showBraille', '#set-preview': 'preview', '#set-sound': 'sound' };
+  const toggles = { '#set-stop': 'stopOnError', '#set-braille': 'showBraille', '#set-preview': 'preview', '#set-lift': 'liftToFix', '#set-sound': 'sound' };
   for (const [sel, key] of Object.entries(toggles)) {
     const input = $(sel);
     input.checked = settings[key];
