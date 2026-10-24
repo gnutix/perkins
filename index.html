@@ -2566,7 +2566,7 @@ div.toggle { cursor: default; }
     beginRead({ fi, key: 'fable:' + fi, title: 'La suite de la fable', total: FABLE_READ.length, units: transcribe(FABLE_READ[fi]).units });
   }
   function beginRead(round) {
-    rd = { ...round, u: 0, errors: 0, shown: 0, missed: new Set(), revealed: new Set(), wrong: null, t0: null, done: false, result: null };
+    rd = { ...round, u: 0, errors: 0, shown: 0, missed: new Set(), revealed: new Set(), wrong: null, t0: null, lastAt: null, done: false, result: null };
     readPicking = false;
     renderRead();
     focusInput();
@@ -2581,8 +2581,14 @@ div.toggle { cursor: default; }
 
   // One typed character against the current sign, case and accents included; false when refused
   function readChar(c) {
-    rd.t0 ??= performance.now();
-    if (c === rd.units[rd.u].ch) {
+    const now = performance.now(), exp = rd.units[rd.u].ch;
+    rd.t0 ??= now;
+    journal.read({
+      round: rd.key, ch: exp, got: c, ok: c === exp, first: !rd.missed.has(rd.u), hint: rd.revealed.has(rd.u),
+      dt: rd.lastAt == null ? null : Math.round(now - rd.lastAt),
+    });
+    rd.lastAt = now;
+    if (c === exp) {
       rd.wrong = null;
       if (++rd.u === rd.units.length) finishRead();
       return true;
