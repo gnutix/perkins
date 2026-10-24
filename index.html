@@ -42,12 +42,13 @@
   --cw: 22px;    /* free-typing cell width */
   --ucw: 16px;   /* exercise cell width */
   --uch: 26px;   /* exercise letter size */
+  --rcw: 30px;   /* reading cell width */
   --bs: 1;       /* braille size, set by the Aa panel */
   --fs: 1;       /* French size, set by the Aa panel */
   color-scheme: light;
 }
 @media (orientation: landscape) and (max-height: 440px) {
-  :root { --cw: 19px; --ucw: 14px; --uch: 22px; }
+  :root { --cw: 19px; --ucw: 14px; --uch: 22px; --rcw: 26px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -219,6 +220,59 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .finish .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .finish .tip { margin: 0; font-size: 12px; color: var(--ink-soft); }
 
+/* Reading: braille to read, the French typed on the phone's own keyboard.
+   The app is sized to the visual viewport, so the view stays above the iOS keyboard. */
+html.reading, html.reading body { background: var(--paper); }
+html.reading .app { height: var(--vvh, 100%); translate: 0 var(--vvt, 0px); }
+html.short .bar { display: none; }
+#btn-read-list { margin-left: auto; }
+#read-view { position: relative; display: flex; flex-direction: column; gap: 6px; overflow: hidden; padding-block: 2px 8px; }
+#read-pick { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-block: 8px 12px; }
+.read-intro { margin: -4px 0 12px; max-width: 40em; font-size: 14px; color: var(--ink-soft); }
+.read-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+.read-sets small { margin-left: 6px; font-size: 12px; color: var(--ok); }
+.read-meta-inline { display: none; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.read-meta-inline b { color: var(--ink); font-weight: 600; }
+.read-run { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+#read-sheet { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-block: 2px; cursor: text; }
+.runits { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: 10px; }
+.runits.drill { --rz: 1.4; column-gap: calc(10px * var(--bs)); }
+.ru { position: relative; display: flex; gap: calc(4px * var(--bs)); padding: 4px 3px 8px; border-radius: 8px; }
+.rc { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.rc .bc { width: calc(var(--rcw) * var(--rz, 1) * var(--bs)); height: calc(var(--rcw) * 1.5 * var(--rz, 1) * var(--bs)); }
+.rc .blank { width: calc(var(--rcw) * .6 * var(--bs)); height: calc(var(--rcw) * 1.5 * var(--rz, 1) * var(--bs)); }
+.rc b { font-weight: 600; font-size: calc(22px * var(--rz, 1) * var(--fs)); line-height: 1; min-height: calc(22px * var(--rz, 1) * var(--fs)); }
+.rspk { display: inline-block; width: calc(14px * var(--fs)); height: calc(8px * var(--fs)); border: 2px solid currentColor; border-top: 0; border-radius: 0 0 3px 3px; }
+.ru.done b { color: var(--ok); }
+.ru.done.missed b { color: var(--err); }
+.ru.shown b { color: var(--hint); }
+.ru.cur { background: #fff6d6; }
+.ru.cur::after {
+  content: ""; position: absolute; left: 3px; right: 3px; bottom: 1px;
+  height: 3px; border-radius: 2px; background: var(--accent);
+}
+.ru.cur.err { background: var(--err-bg); animation: shake .3s; }
+.ru.cur.err b { color: var(--err); }
+.ru.cur.err::after { background: var(--err); }
+.ru .rc.ind b {
+  font-family: var(--f-mono); font-size: calc(10px * var(--fs)); line-height: calc(22px * var(--rz, 1) * var(--fs));
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft);
+}
+.runits .w { gap: 0; }
+.read-foot { flex: none; display: flex; align-items: center; gap: 8px; }
+#read-input {
+  flex: 1 1 auto; min-width: 0; height: 44px; margin: 0; padding: 0 14px;
+  border: 1.5px dashed var(--ink-soft); border-radius: 12px; background: #fff; color: var(--ink);
+  font: 400 16px var(--f-body); /* under 16px, iOS zooms in on focus */
+  caret-color: var(--hint);
+}
+#read-input::placeholder { color: var(--ink-soft); opacity: 1; }
+#read-input:focus { outline: none; border-style: solid; border-color: var(--hint); box-shadow: 0 0 0 3px var(--hint-bg); }
+.read-foot .btn { flex: none; height: 44px; }
+html.short #read-done { gap: 6px; }
+html.short #read-done h2 { font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { .ru.cur.err { animation: none; } }
+
 /* ---------- Machine ---------- */
 .machine {
   --center: clamp(60px, 10.5vw, 120px);
@@ -317,6 +371,18 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   .bar { padding-block: 4px 0; }
   .ibtn { width: 34px; height: 34px; }
 }
+@media (orientation: landscape) {
+  .read-run { flex-direction: row; }
+  .read-foot { flex: 0 0 min(36%, 220px); flex-direction: column; align-items: stretch; justify-content: flex-end; }
+  #read-input { flex: none; }
+}
+@media (orientation: portrait) {
+  .read-meta-inline { display: block; }
+}
+/* Three tabs beside the exercise buttons on a 375 px wide phone */
+@media (max-width: 420px) {
+  .tabs button { padding-inline: 6px; font-size: 12px; }
+}
 
 /* ---------- Overlays ---------- */
 .overlay {
@@ -407,10 +473,12 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       <div class="tabs" role="tablist" aria-label="Mode">
         <button id="tab-free" role="tab" aria-selected="true">Libre</button>
         <button id="tab-ex" role="tab" aria-selected="false">Exercices</button>
+        <button id="tab-read" role="tab" aria-selected="false">Lecture</button>
       </div>
 
       <div class="spacer" id="free-spacer"></div>
       <div class="meta" id="ex-meta" hidden></div>
+      <div class="meta" id="read-meta" hidden></div>
 
       <button class="ibtn" id="btn-copy" aria-label="Copier le texte en français" title="Copier le texte">
         <svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
@@ -426,6 +494,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>
       </button>
       <button class="ibtn" id="btn-lessons" aria-label="Choisir un exercice" title="Exercices" hidden>
+        <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+      </button>
+      <button class="ibtn" id="btn-read-list" aria-label="Choisir une lecture" title="Lectures" hidden>
         <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
       </button>
 
@@ -454,6 +525,27 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <button class="btn" id="done-list">Exercices</button>
       </div>
       <p class="tip" id="done-tip">Ou appuie sur la barre d’espace pour continuer.</p>
+    </div>
+
+    <div class="view gutter" id="read-view" hidden>
+      <div id="read-pick"></div>
+      <div class="read-meta-inline" id="read-meta-inline"></div>
+      <div class="read-run" id="read-run">
+        <div id="read-sheet"></div>
+        <div class="read-foot">
+          <input id="read-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Écris ce que tu lis" placeholder="Touche ici pour écrire">
+          <button class="btn" id="read-show">Montrer</button>
+        </div>
+      </div>
+      <div class="finish gutter" id="read-done" hidden>
+        <h2 id="read-done-title">Terminé</h2>
+        <div class="stats" id="read-done-stats"></div>
+        <div class="row">
+          <button class="btn primary" id="read-next">Suivant</button>
+          <button class="btn" id="read-again">Recommencer</button>
+        </div>
+        <p class="tip" id="read-done-tip"></p>
+      </div>
     </div>
   </section>
 
@@ -803,6 +895,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   window.addEventListener('keydown', (e) => {
     if (e.target.closest?.('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { closeOverlays(); if (mode === 'ex' && !ex) setMode('free'); return; }
+    if (mode === 'read') { readKey(e); return; }
     const k = CODES[e.code];
     if (!k || overlayOpen()) return;
     e.preventDefault();
@@ -1078,11 +1171,20 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     releaseAll();
     $('#tab-free').setAttribute('aria-selected', String(m === 'free'));
     $('#tab-ex').setAttribute('aria-selected', String(m === 'ex'));
+    $('#tab-read').setAttribute('aria-selected', String(m === 'read'));
     el.freeView.hidden = m !== 'free';
     el.exView.hidden = m !== 'ex';
+    $('#read-view').hidden = m !== 'read';
+    // Reading uses the phone's own keyboard, which needs the room the machine takes
+    el.machine.hidden = m === 'read';
+    document.documentElement.classList.toggle('reading', m === 'read');
     for (const id of ['#btn-copy', '#btn-clear', '#free-spacer']) $(id).hidden = m !== 'free';
     for (const id of ['#btn-hint', '#btn-restart', '#btn-lessons', '#ex-meta']) $(id).hidden = m !== 'ex';
+    for (const id of ['#btn-read-list', '#read-meta']) $(id).hidden = m !== 'read';
+    if (m !== 'read') readIn.blur();
+    fitViewport();
     if (m === 'free') { el.done.hidden = true; lastShown = null; renderFree(); renderKeyHints(); renderPreview(); }
+    else if (m === 'read') { el.done.hidden = true; renderKeyHints(); renderRead(); }
     else if (ex) renderEx();
     else openPicker();
   }
@@ -1231,6 +1333,281 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     resetClear.t = setTimeout(resetClear, 3000);
   });
   function resetClear() { clearBtn.classList.remove('confirm'); clearBtn.innerHTML = clearIcon; }
+
+  /* ---------- Reading: braille on screen, the French typed on the phone's keyboard ---------- */
+  const READ_SETS = [
+    { id: 'aj', label: 'a à j', title: 'Lettres a à j', chars: 'abcdefghij' },
+    { id: 'kt', label: 'k à t', title: 'Lettres k à t', chars: 'klmnopqrst' },
+    { id: 'uz', label: 'u à z', title: 'Lettres u à z', chars: 'uvwxyz' },
+    { id: 'acc', label: 'Accents', title: 'Accents', chars: 'éèàùçâêîôûëïüœ' },
+  ];
+  READ_SETS.push({ id: 'all', label: 'Tout', title: 'Toutes les lettres', chars: READ_SETS.map((s) => s.chars).join('') });
+  const DRILL = 20;
+  // iOS types curly quotes and long dashes; the texts have plain ones (see normalize)
+  const TYPO = { '’': "'", '‘': "'", 'ʼ': "'", '`': "'", '«': '"', '»': '"', '“': '"', '”': '"', '„': '"', '–': '-', '—': '-', ' ': ' ', ' ': ' ' };
+  const readIn = $('#read-input'), readSheet = $('#read-sheet'), readPick = $('#read-pick'), readRun = $('#read-run'), readDone = $('#read-done');
+  let rd = null, readPicking = false;
+
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const clock = (secs) => `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+
+  // Every sign of the set comes up about as often, and never twice in a row
+  function drill(chars) {
+    const out = [];
+    let bag = [];
+    while (out.length < DRILL) {
+      if (!bag.length) bag = shuffle([...chars]);
+      const k = Math.max(0, bag.findIndex((c) => c !== out.at(-1)));
+      out.push(bag.splice(k, 1)[0]);
+    }
+    return out.map((ch) => ({ ch, cells: [CHAR2MASK[ch]] }));
+  }
+
+  function startReadLetters(si) {
+    const s = READ_SETS[si];
+    beginRead({ si, drill: true, key: 'letters:' + s.id, title: s.title, units: drill(s.chars) });
+  }
+  function startReadText(li, i) {
+    const l = LESSONS[li];
+    beginRead({ li, i, key: l.id + ':' + i, title: l.title, total: l.items.length, units: transcribe(l.items[i]).units });
+  }
+  function beginRead(round) {
+    rd = { ...round, u: 0, errors: 0, shown: 0, missed: new Set(), revealed: new Set(), wrong: null, t0: null, done: false, result: null };
+    readPicking = false;
+    renderRead();
+    focusInput();
+  }
+  const readAgain = () => (rd.drill ? startReadLetters(rd.si) : startReadText(rd.li, rd.i));
+  function readNext() {
+    if (rd.drill) return rd.si + 1 < READ_SETS.length ? () => startReadLetters(rd.si + 1) : null;
+    if (rd.i + 1 < LESSONS[rd.li].items.length) return () => startReadText(rd.li, rd.i + 1);
+    if (rd.li + 1 < LESSONS.length) return () => startReadText(rd.li + 1, 0);
+    return null;
+  }
+  const readGoNext = () => (readNext() ?? readAgain)();
+
+  // One typed character against the current sign, case and accents included; false when refused
+  function readChar(c) {
+    rd.t0 ??= performance.now();
+    if (c === rd.units[rd.u].ch) {
+      rd.wrong = null;
+      if (++rd.u === rd.units.length) finishRead();
+      return true;
+    }
+    rd.errors++;
+    rd.wrong = c;
+    rd.missed.add(rd.u);
+    sfx.err();
+    clearTimeout(readChar.t);
+    readChar.t = setTimeout(() => { if (rd.wrong !== null) { rd.wrong = null; renderRead(); } }, 1200);
+    return false;
+  }
+
+  function finishRead() {
+    rd.done = true;
+    const n = rd.units.length, acc = Math.round((100 * n) / (n + rd.errors));
+    const secs = Math.round((performance.now() - rd.t0) / 1000);
+    const best = store.get('reading', {}), prev = best[rd.key];
+    const better = !prev || acc > prev.acc || (acc === prev.acc && secs < prev.secs);
+    if (better) { best[rd.key] = { acc, secs }; store.set('reading', best); }
+    rd.result = { acc, secs, prev, better };
+    sfx.win();
+  }
+
+  // The field is emptied after each character, so iOS has nothing to correct or capitalise
+  readIn.addEventListener('input', (e) => {
+    if (e.isComposing) return; // a dead key: wait for the finished letter
+    const typed = readIn.value.normalize('NFC');
+    readIn.value = '';
+    if (!rd || rd.done || readPicking || !typed) return;
+    for (const c of typed) if (rd.done || !readChar(TYPO[c] ?? c)) break;
+    renderReadRun();
+  });
+  readIn.addEventListener('compositionend', () => readIn.dispatchEvent(new Event('input')));
+  readIn.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    if (rd?.done) readGoNext();
+  });
+
+  // iOS scrolls the page to show a field it focuses. Moved out of the way for that instant,
+  // the field stays put, and fitViewport keeps the view above the keyboard instead.
+  function focusInput() {
+    audio(); keepAwake();
+    if (document.activeElement === readIn) return;
+    readIn.style.transform = 'translateY(-2000px)';
+    readIn.focus({ preventScroll: true });
+    requestAnimationFrame(() => { readIn.style.transform = ''; });
+  }
+  readIn.addEventListener('touchend', (e) => {
+    if (document.activeElement === readIn) return;
+    e.preventDefault();
+    focusInput();
+  });
+  readIn.addEventListener('focus', () => { readIn.placeholder = 'Écris ce que tu lis'; fitViewport(); });
+  readIn.addEventListener('blur', () => { readIn.placeholder = 'Touche ici pour écrire'; fitViewport(); });
+  readSheet.addEventListener('click', focusInput);
+  // Buttons in the reading view leave the focus, and so the keyboard, on the field
+  $('#read-view').addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+
+  // On a computer, a letter typed outside the field goes into it; Enter continues after a round
+  function readKey(e) {
+    if (overlayOpen() || !rd || readPicking) return;
+    const go = e.key === 'Enter' || e.key === ' ';
+    if (go && e.target.closest?.('button')) return;
+    if (rd.done) { if (go) { e.preventDefault(); readGoNext(); } }
+    else if (e.key.length === 1 || e.key === 'Dead') focusInput();
+  }
+
+  // The iOS keyboard covers the bottom of the screen without resizing the page: fit the app
+  // to the part still visible, and undo any scroll iOS makes to reveal the field
+  const vv = window.visualViewport;
+  function fitViewport() {
+    const root = document.documentElement;
+    const on = mode === 'read' && !!vv && Math.abs(vv.scale - 1) < 0.01;
+    if (on && window.scrollY) window.scrollTo(0, 0);
+    root.style.setProperty('--vvh', on ? vv.height + 'px' : '');
+    root.style.setProperty('--vvt', on ? Math.max(0, vv.offsetTop) + 'px' : '');
+    // Phone held sideways with the keyboard open: the braille gets the bar's room too
+    root.classList.toggle('short', on && vv.height < 240 && document.activeElement === readIn);
+    readScroll();
+  }
+  vv?.addEventListener('resize', fitViewport);
+  vv?.addEventListener('scroll', fitViewport);
+  window.addEventListener('scroll', () => { if (mode === 'read') fitViewport(); });
+
+  function readScroll() {
+    const cur = readSheet.querySelector('.ru.cur');
+    if (mode !== 'read' || !cur) return;
+    const s = readSheet, top = cur.offsetTop, bottom = top + cur.offsetHeight;
+    if (top < s.scrollTop) s.scrollTop = top - 4;
+    else if (bottom > s.scrollTop + s.clientHeight) s.scrollTop = bottom - s.clientHeight + 4;
+  }
+
+  const readLabel = (c) => (c === ' ' ? '<span class="rspk"></span>' : esc(c));
+
+  function renderRead() {
+    const picking = readPicking || !rd;
+    readPick.hidden = !picking;
+    readRun.hidden = picking;
+    $('#read-meta-inline').hidden = picking;
+    if (picking) { readDone.hidden = true; $('#read-meta').innerHTML = ''; renderReadPick(); }
+    else renderReadRun();
+  }
+
+  function renderReadRun() {
+    let html = '', word = '';
+    rd.units.forEach((un, i) => {
+      const state = rd.done || i < rd.u ? 'done' : i === rd.u ? 'cur' : 'todo';
+      const wrong = state === 'cur' && rd.wrong !== null;
+      let cls = `ru ${state}`;
+      if (un.ch === ' ') cls += ' space';
+      if (rd.missed.has(i)) cls += ' missed';
+      if (rd.revealed.has(i)) cls += ' shown';
+      if (wrong) cls += ' err';
+      const label = wrong ? rd.wrong : state === 'done' || (state === 'cur' && rd.revealed.has(i)) ? un.ch : '';
+      const last = un.cells.length - 1;
+      // The capital and number signs have nothing to type: they are labelled, like in free typing
+      const cells = un.ch === ' '
+        ? `<span class="rc"><span class="blank"></span><b>${readLabel(label)}</b></span>`
+        : un.cells.map((m, j) => (j < last
+          ? `<span class="rc ind">${cellSVG(m)}<b>${m === CAP ? 'maj' : 'num'}</b></span>`
+          : `<span class="rc">${cellSVG(m)}<b>${readLabel(label)}</b></span>`)).join('');
+      const unit = `<span class="${cls}">${cells}</span>`;
+      // A space stays with the word before it, so no line starts with an empty cell
+      if (un.ch === ' ') { html += `<span class="w">${word}${unit}</span>`; word = ''; }
+      else if (rd.drill) html += unit;
+      else word += unit;
+    });
+    html += `<span class="w">${word}</span>`;
+    readSheet.innerHTML = `<div class="runits${rd.drill ? ' drill' : ''}">${html}</div>`;
+    readScroll();
+
+    const meta = `<b>${esc(rd.title)}</b> · ${rd.drill ? '' : `texte ${rd.i + 1}/${rd.total} · `}${rd.u}/${rd.units.length} · ${rd.errors} erreur${rd.errors > 1 ? 's' : ''}`;
+    $('#read-meta').innerHTML = meta;
+    $('#read-meta-inline').innerHTML = meta;
+    $('#read-show').disabled = rd.done;
+    readDone.hidden = !rd.done;
+    if (!rd.done) return;
+    const { acc, secs, prev, better } = rd.result;
+    $('#read-done-title').textContent = rd.errors === 0 && rd.shown === 0 ? 'Parfait, aucune erreur' : acc >= 90 ? 'Bravo, c’est réussi' : 'Terminé';
+    $('#read-done-stats').innerHTML = [
+      ['Précision', acc + ' %'], ['Erreurs', rd.errors], ['Montrés', rd.shown], ['Temps', clock(secs)],
+    ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+    $('#read-done-tip').textContent = !prev ? '' : better ? 'Nouveau record.' : `Ton record : ${prev.acc} % en ${clock(prev.secs)}.`;
+    $('#read-next').hidden = !readNext();
+  }
+
+  function renderReadPick() {
+    const best = store.get('reading', {});
+    const sets = READ_SETS.map((s, si) => {
+      const b = best['letters:' + s.id];
+      return `<button class="btn small" data-set="${si}">${esc(s.label)}${b ? `<small>${b.acc} %</small>` : ''}</button>`;
+    }).join('');
+    const texts = LESSONS.map((l, li) => {
+      const signs = l.signs.map(([m, c]) => `<span class="sign">${cellSVG(m)}${esc(c)}</span>`).join('');
+      const chips = l.items.map((_, i) => {
+        const b = best[l.id + ':' + i];
+        return `<button class="chip${b ? ' done' : ''}" data-li="${li}" data-i="${i}" aria-label="Texte ${i + 1}${b ? `, lu à ${b.acc} %` : ''}">${i + 1}</button>`;
+      }).join('');
+      const doneCount = l.items.filter((_, i) => best[l.id + ':' + i]).length;
+      return `<article class="lesson">
+        <h3>${esc(l.title)}</h3>
+        ${signs ? `<div class="signs">${signs}</div>` : ''}
+        <div class="lesson-foot">${chips}<button class="btn primary small" data-li="${li}" data-start>${doneCount && doneCount < l.items.length ? 'Continuer' : 'Commencer'}</button></div>
+      </article>`;
+    }).join('');
+    readPick.innerHTML = `<div class="overlay-head"><h2>Lecture</h2>${rd ? '<button class="btn small" data-act="resume">Reprendre</button>' : ''}</div>
+      <p class="read-intro">Lis le braille, puis écris ce que tu lis avec le clavier du téléphone. Une lettre juste passe au vert, une erreur est refusée.</p>
+      <div class="lessons">
+        <article class="lesson">
+          <h3>Lettres au hasard</h3>
+          <p>${DRILL} signes, un à la fois. Écris la lettre, la suivante arrive toute seule.</p>
+          <div class="read-sets">${sets}</div>
+        </article>
+        ${texts}
+      </div>
+      <p class="overlay-foot">Pour un accent, garde le doigt sur la lettre (é, è, à…). Le signe maj annonce une majuscule, num un chiffre. À la verticale, le clavier laisse plus de place au braille.</p>`;
+  }
+
+  function showReadPick(open) {
+    readPicking = open || !rd;
+    if (readPicking) readIn.blur();
+    renderRead();
+    if (!readPicking && !rd.done) focusInput();
+  }
+
+  readPick.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const li = +b.dataset.li;
+    if (b.dataset.act === 'resume') showReadPick(false);
+    else if (b.dataset.set) startReadLetters(+b.dataset.set);
+    else if (b.hasAttribute('data-start')) {
+      const best = store.get('reading', {});
+      startReadText(li, Math.max(0, LESSONS[li].items.findIndex((_, i) => !best[LESSONS[li].id + ':' + i])));
+    } else startReadText(li, +b.dataset.i);
+  });
+  $('#read-show').addEventListener('click', () => {
+    if (!rd || rd.done) return;
+    if (!rd.revealed.has(rd.u)) { rd.revealed.add(rd.u); rd.shown++; }
+    rd.wrong = null;
+    renderReadRun();
+    focusInput();
+  });
+  $('#read-next').addEventListener('click', readGoNext);
+  $('#read-again').addEventListener('click', readAgain);
+  $('#tab-read').addEventListener('click', () => {
+    closeOverlays();
+    if (mode === 'read') { showReadPick(true); return; }
+    setMode('read');
+    if (rd && !readPicking && !rd.done) focusInput();
+  });
+  $('#btn-read-list').addEventListener('click', () => showReadPick(!readPicking));
+  // Typing must not go on behind the settings
+  $('#btn-settings').addEventListener('click', () => readIn.blur());
+  for (const sel of ['#size-braille', '#size-fr']) $(sel).addEventListener('input', readScroll);
+  $('#size-reset').addEventListener('click', readScroll);
 
   applySizes();
   setMode('free');

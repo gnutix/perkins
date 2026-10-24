@@ -10,6 +10,7 @@ Each launch loads the latest version when online, and the last copy keeps workin
 
 - **Libre** — type on the six keys (3 2 1 · 4 5 6) like on the Perkins: press the keys of a sign together, and it is written when all of them are released. Each braille cell shows its French letter underneath, with the capital sign (4-6) and number sign (6 + Antoine digits) applied.
 - **Exercices** — type a French text; every mistake stops the typing. *Montrer* / *Indice* lights up the keys to press. Lessons go from a–j to a La Fontaine fable, and *Mon texte* takes any text.
+- **Lecture** — read braille on screen and type the French with the phone's own keyboard (the Perkins keys are hidden to make room). Random letters (a–j, k–t, u–z, accents, all) or the lesson texts; a right letter turns green, a wrong one is refused, *Montrer* reveals it. Best results stay on the device.
 
 On a computer: `S D F` = dots 3 2 1, `J K L` = dots 4 5 6, plus `Space`, `Enter` and `Backspace`.
 
