@@ -354,6 +354,35 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .note.warn { color: var(--err); }
 .overlay-foot { margin: 16px 0 0; font-size: 13px; color: var(--ink-soft); max-width: 40em; }
 
+/* Weak spots: the signs missed most lately, the pairs mixed up, and letters picked by hand */
+.weak { margin-bottom: 10px; }
+.weak-body { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 28px; }
+.weak-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wlabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.wsigns { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.wk { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; }
+.wk .bc { width: 16px; height: 24px; }
+.wk b { font: 700 17px/1 var(--f-body); }
+.wk small, .cf small { font: 600 11px/1 var(--f-mono); color: var(--err); font-variant-numeric: tabular-nums; }
+.cf { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cf > span { display: flex; align-items: flex-start; gap: 3px; }
+.cf i { font-style: normal; color: var(--ink-soft); line-height: 24px; }
+.cf small { color: var(--ink-soft); }
+.pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 5px; }
+.pchip {
+  padding: 6px 0 5px; border-radius: 10px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  border: 1.5px solid var(--rule); background: var(--paper);
+  font-weight: 700; font-size: 15px; line-height: 1;
+}
+.pchip .bc { width: 14px; height: 21px; }
+.pchip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.pchip[aria-pressed="true"] .bc .on { fill: var(--paper); }
+.pchip[aria-pressed="true"] .bc .off { fill: var(--paper); opacity: .3; }
+.weak .lesson-foot .btn:first-child { margin-left: 0; }
+.lesson-foot .note { flex: 1 1 auto; }
+.btn.confirm { background: var(--err); color: #fff; box-shadow: none; }
+
 .modal {
   position: absolute; inset: 0; z-index: 30;
   display: grid; place-items: center; padding: 16px;
@@ -368,6 +397,8 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; cursor: pointer; }
 .toggle small { display: block; font-size: 12px; color: var(--ink-soft); }
 .toggle input { flex: none; width: 22px; height: 22px; accent-color: var(--ink); }
+div.toggle { cursor: default; }
+.toggle .btn { flex: none; }
 .panel .keys { margin: 0; font-size: 13px; color: var(--ink-soft); }
 .panel kbd { font: 600 12px var(--f-mono); padding: 1px 5px; border-radius: 4px; background: var(--paper-2); color: var(--ink); }
 
@@ -492,6 +523,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <article class="lesson weak" id="weak"></article>
     <div class="lessons" id="lesson-list"></div>
     <div class="lessons" style="margin-top:10px">
       <article class="lesson">
@@ -513,6 +545,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       <label class="toggle"><span>Lettre pendant la frappe<small>Affiche la lettre avant de relâcher.</small></span><input type="checkbox" id="set-preview"></label>
       <label class="toggle"><span>Retirer un point en relâchant sa touche<small>Si les autres touches restent enfoncées. Sur une vraie Perkins, le point est déjà embossé.</small></span><input type="checkbox" id="set-lift"></label>
       <label class="toggle"><span>Son des touches</span><input type="checkbox" id="set-sound"></label>
+      <div class="toggle"><span>Erreurs notées<small>Elles servent à trouver tes points faibles.</small></span><button class="btn small" id="stats-reset">Effacer</button></div>
       <p class="keys">Sur ordinateur : <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> = points 3 2 1, <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> = points 4 5 6, <kbd>Espace</kbd>, <kbd>Entrée</kbd>, <kbd>⌫</kbd>.</p>
       <p class="keys">Sur téléphone, tiens-le à l’horizontale. Sur iPhone, « Partager › Sur l’écran d’accueil » l’ouvre en plein écran.</p>
       <button class="btn primary" id="settings-close">Fermer</button>
@@ -666,12 +699,52 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       items: ['Maître Corbeau, sur un arbre perché,', 'Tenait en son bec un fromage.', "Maître Renard, par l'odeur alléché,", 'Lui tint à peu près ce langage:'] },
   ];
 
+  // Common words for the "Points faibles" drills, picked by the letters they contain
+  const WORDS = `
+    a à ah au bah ça ce ces cet chez dans de des du elle en est et eu il ici là le les lui ma mais me mes moi mon
+    ne ni nous on ou où oui par pas peu plus pour qui que quoi sa sans se ses si son sous sur ta te tes toi ton tout
+    très tu un une vers voici voilà vous y déjà donc car avec après avant bien encore souvent toujours jamais hier
+    demain bientôt tôt tard près même prêt
+    bac cage chef face biche fiche hache aide jade beige badge chic cache chiche fade bide gag dada hic
+    chat chien cheval vache mouton poule coq lapin souris oiseau poisson cochon canard âne zèbre lion tigre ours loup
+    renard hibou abeille mouche fourmi papillon escargot koala lynx girafe dauphin baleine requin crabe singe gazelle
+    chèvre bœuf wapiti
+    maison porte fenêtre table chaise lit lampe tapis mur toit cuisine chambre jardin fleur arbre herbe feuille forêt
+    montagne rivière lac mer plage île ciel soleil lune étoile nuage pluie neige vent orage hiver été automne
+    printemps zone
+    pain lait eau vin thé café sucre sel beurre fromage pomme poire fraise cerise citron orange banane tomate salade
+    soupe riz pâte gâteau crêpe tarte chocolat confiture miel œuf viande poulet jambon frite huile moka yaourt kiwi
+    noix maïs sandwich dîner pêche
+    père mère frère sœur fils fille enfant bébé ami amie homme femme garçon dame monsieur madame oncle tante cousin
+    roi reine prince maître élève docteur médecin héros maçon
+    tête main pied bras jambe dos cœur œil yeux nez bouche dent oreille cheveu doigt genou ventre peau voix lèvre
+    jour nuit matin soir midi heure minute semaine mois année an âge temps fois lundi mardi mercredi jeudi vendredi
+    samedi dimanche août week noël siècle
+    école classe cahier livre stylo crayon papier lettre mot phrase page leçon dessin musique chanson film jeu jouet
+    ballon vélo voiture train avion bateau taxi wagon bus métro route rue ville village pays gare hôtel château église
+    musée magasin marché zoo parc boîte flûte bâton câble canoë kayak ski web wok poker képi kilo pyjama yoga lycée
+    cycle type texte prix choix croix paix gaz gazon lézard capharnaüm mosaïque faïence théâtre gîte chaîne huître
+    côte rôle pôle diplôme fantôme bûche croûte nœud vœu œuvre problème collègue glaçon fièvre tâche grâce
+    rouge bleu vert jaune noir blanc gris rose brun
+    deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize vingt cent mille zéro
+    grand petit gros long court haut bas beau belle joli jolie bon bonne mauvais chaud chaude froid doux dur vieux
+    jeune vide plein fort facile drôle triste content heureux sûr mûr rapide lent riche pauvre propre exact fixe
+    bizarre humide hideux hardi naïf aigüe ambigüe français mieux roux
+    être avoir faire dire aller voir venir prendre donner mettre parler manger boire dormir jouer lire écrire chanter
+    danser courir sauter nager marcher aimer chercher trouver penser savoir pouvoir vouloir finir partir sortir rire
+    ouvrir fermer haïr payer reçu rêve fête bête goût coût jeûne abîme contrôle piqûre héroïne égoïste aïeul ouïe
+    jeux feux luxe boxe axe
+    chose cher histoire habit honte hasard poche roche chaque chemin chemise chacun malheur bonheur dehors déchet
+    habitude date danse droit droite monde rond sud mode code coude cadeau dinde dessert radio sardine solide idée
+  `.trim().split(/\s+/);
+
   /* ---------- Storage ---------- */
   const store = {
     get(k, d) { try { const v = localStorage.getItem('sixpoints.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem('sixpoints.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
   const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, liftToFix: false, sound: true, brailleSize: 100, frSize: 100 }, store.get('settings', {}));
+  let stats = store.get('stats', {}); // see "Weak spots"
   let freeTokens = store.get('free', null) ?? transcribe('Bonjour').units.flatMap((u) => u.cells);
   let mode = 'free';
   let ex = null;
@@ -871,6 +944,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 
   function lessonAt(li) {
     if (li === 'custom') return { id: 'custom', title: 'Mon texte', items: [store.get('custom', '')] };
+    if (li === 'weak') return { id: 'weak', title: drill.title, items: [drill.text] };
     return LESSONS[li];
   }
 
@@ -881,7 +955,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     ex = {
       li, i, units, title: lesson.title, total: lesson.items.length, key: lesson.id + ':' + i,
       u: 0, c: 0, errors: 0, hints: 0, hint: false, hinted: false, err: null, locked: false, done: false,
-      t0: null, t1: null, missed: new Set(),
+      t0: null, t1: null, missed: new Set(), slip: false, review: new Set(),
     };
     lastShown = null;
     closeOverlays();
@@ -891,17 +965,23 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 
   function nextTarget() {
     if (!ex || ex.li === 'custom') return null;
+    if (ex.li === 'weak') return ['weak', 0]; // a new drill
     if (ex.i + 1 < LESSONS[ex.li].items.length) return [ex.li, ex.i + 1];
     if (ex.li + 1 < LESSONS.length) return [ex.li + 1, 0];
     return null;
   }
-  function goNext() { const n = nextTarget(); if (n) startEx(...n); else openPicker(); }
+  function goNext() {
+    if (ex?.li === 'weak') { startDrill(drill.from); return; }
+    const n = nextTarget(); if (n) startEx(...n); else openPicker();
+  }
 
   function exInput(m) {
     if (ex.locked || ex.done) return;
     ex.t0 ??= performance.now();
     const unit = ex.units[ex.u];
     if (m === unit.cells[ex.c]) {
+      if (!ex.slip) noteSign(ex.hint ? '#' : '');
+      ex.slip = false;
       ex.err = null;
       ex.c++;
       if (ex.c === unit.cells.length) {
@@ -910,6 +990,8 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       if (ex.u === ex.units.length) { finishEx(); return; }
       sfx.key();
     } else {
+      if (!ex.slip) noteSign(typedKey(m));
+      ex.slip = true;
       ex.errors++;
       ex.err = m;
       ex.missed.add(ex.u);
@@ -939,18 +1021,148 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     const cells = ex.units.reduce((n, u) => n + u.cells.length, 0);
     const accuracy = Math.round((100 * cells) / (cells + ex.errors));
     const progress = store.get('progress', {});
-    if (ex.li !== 'custom') { progress[ex.key] = Math.max(progress[ex.key] ?? 0, accuracy); store.set('progress', progress); }
+    if (typeof ex.li === 'number') { progress[ex.key] = Math.max(progress[ex.key] ?? 0, accuracy); store.set('progress', progress); }
     const secs = Math.round(((ex.t1 - (ex.t0 ?? ex.t1)) / 1000));
     const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    const review = [...ex.review];
     $('#done-title').textContent = ex.errors === 0 ? 'Parfait, aucune erreur' : accuracy >= 90 ? 'Bravo, c’est réussi' : 'Terminé';
     $('#done-stats').innerHTML = [
       ['Précision', accuracy + ' %'], ['Erreurs', ex.errors], ['Indices', ex.hints], ['Temps', time],
-    ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+      ...(review.length ? [['À revoir', review.slice(0, 6).join(' ') + (review.length > 6 ? ' …' : '')]] : []),
+    ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${esc(v)}</b></div>`).join('');
     const next = nextTarget();
     $('#done-next').hidden = !next;
+    $('#done-next').textContent = ex.li === 'weak' ? 'Autre entraînement' : 'Exercice suivant';
     $('#done-tip').textContent = next ? 'Ou appuie sur la barre d’espace pour passer à la suite.' : 'Ou appuie sur la barre d’espace pour recommencer.';
     sfx.win();
     renderEx();
+  }
+
+  /* ---------- Weak spots ---------- */
+  // Each sign keeps its last 20 outcomes in `stats`: '' when typed right, else what was typed instead
+  // ('#' for a hint, a space or a cell that is no sign). A sign is weak with at least 5 outcomes,
+  // 2 of them misses, and misses making 15 % or more: recent tries push the old ones out.
+  const STAT_KEEP = 20, WEAK_MIN = 5, DRILL_FILL = 56, DRILL_MAX = 70;
+  const isChar = (k) => [...k].length === 1; // 'maj' and 'num' are not
+  const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(([, v]) => v);
+  const kindOf = (c) => (LETTERS[c] ? 'letter' : DIGITS[c] ? 'digit' : 'punct');
+  const keyMask = (k) => (k === 'maj' ? CAP : k === 'num' ? NUM : DIGIT2MASK[k] ?? CHAR2MASK[k]);
+
+  // The sign expected at the cursor: letter (lowercase), accent, digit, punctuation, or the capital/number sign
+  function signKey() {
+    const unit = ex.units[ex.u], m = unit.cells[ex.c];
+    return m === SPACE ? null : m === CAP ? 'maj' : m === NUM ? 'num' : unit.ch.toLowerCase();
+  }
+  function typedKey(m) {
+    const t = decode([...typedSoFar(), m]).at(-1);
+    return t.kind === 'char' ? t.label.toLowerCase() : t.kind === 'ind' ? t.label : '#';
+  }
+  function noteSign(out) {
+    const k = signKey();
+    if (!k) return;
+    const r = (stats[k] ||= []);
+    r.push(out);
+    if (r.length > STAT_KEEP) r.shift();
+    store.set('stats', stats);
+    if (out) ex.review.add(k);
+  }
+
+  function weakSigns() {
+    return Object.entries(stats)
+      .map(([k, r]) => ({ k, n: r.length, miss: r.filter(Boolean).length }))
+      .filter((s) => s.n >= WEAK_MIN && s.miss >= 2 && s.miss / s.n >= 0.15)
+      .sort((a, b) => b.miss / b.n - a.miss / a.n || b.miss - a.miss);
+  }
+  // Signs typed one for the other, both ways together: [a, b, times], a being the one expected more often
+  function confusions() {
+    const pairs = {};
+    for (const [k, r] of Object.entries(stats)) {
+      for (const t of r) {
+        if (!isChar(k) || !isChar(t) || t === '#') continue;
+        const p = (pairs[[k, t].sort().join('')] ||= { a: k, b: t, n: 0, lead: 0 });
+        p.n++;
+        p.lead += p.a === k ? 1 : -1;
+      }
+    }
+    return Object.values(pairs).filter((p) => p.n >= 2).sort((x, y) => y.n - x.n)
+      .map((p) => (p.lead < 0 ? [p.b, p.a, p.n] : [p.a, p.b, p.n]));
+  }
+
+  // Signs met so far: every lesson up to the furthest one practised, and whatever was typed in an exercise
+  function metSigns() {
+    const progress = store.get('progress', {});
+    const last = LESSONS.reduce((n, l, li) => (l.items.some((_, i) => progress[l.id + ':' + i] != null) ? li : n), 0);
+    return new Set([...LESSONS.slice(0, last + 1).flatMap((l) => l.signs.map(([, c]) => c)), ...Object.keys(stats)]);
+  }
+
+  // 40 to 70 characters: each sign alone, contrasts for the pairs (hd dh hdh), then common words that
+  // contain them, made of signs already met when there are enough such words
+  function makeDrill(targets, pairs) {
+    const met = metSigns();
+    targets.forEach((k) => met.add(k));
+    const chars = targets.filter(isChar), letters = chars.filter((c) => kindOf(c) === 'letter');
+    const digits = chars.filter((c) => kindOf(c) === 'digit');
+    const fits = (w) => [...w].every((c) => met.has(c));
+    const withSign = (c) => {
+      const all = WORDS.filter((w) => w.includes(c)), known = all.filter(fits);
+      return known.length >= 3 ? known : all;
+    };
+    const toks = [...chars], at = [];
+    const len = () => toks.join(' ').length;
+    const put = (list) => {
+      const room = shuffle(list).filter((w) => len() + 1 + w.length <= DRILL_MAX);
+      const w = room.find((x) => !at.some((i) => toks[i] === x)) ?? room[0];
+      if (w) { at.push(toks.length); toks.push(w); }
+      return w;
+    };
+    if (chars.length === 1 && !pairs.length) toks.push(chars[0].repeat(2), chars[0].repeat(3));
+    if (targets.includes('num') && !digits.length) toks.push(String(10 + Math.floor(Math.random() * 90)));
+    for (const [a, b] of pairs) {
+      toks.push(a + b, b + a, a + b + a);
+      put(WORDS.filter((w) => w.includes(a) && w.includes(b) && fits(w)));
+    }
+    // Words for the letter seen least so far, until the drill is long enough
+    const pools = letters.length ? letters.map((c) => [c, withSign(c)]) : [['', WORDS.filter(fits)]];
+    const uses = (c) => at.filter((i) => toks[i].includes(c)).length;
+    while (len() < DRILL_FILL && pools.length) {
+      pools.sort(([a], [b]) => uses(a) - uses(b));
+      if (!put(pools[0][1])) pools.shift();
+    }
+
+    // Punctuation and capitals go on the words
+    const any = (re) => shuffle(WORDS.filter((x) => re.test(x) && fits(x)))[0];
+    chars.filter((c) => kindOf(c) === 'punct').forEach((p, j) => {
+      if (!at.length) return;
+      const i = at[j % at.length], w = toks[i];
+      toks[i] = '()'.includes(p) ? `(${w})` : p === '"' ? `"${w}"` : p === "'" ? `l'${any(/^[aeiouéèêâîôûœ]/) ?? 'eau'}`
+        : ',;:.?!'.includes(p) ? w + p : w + p + (any(/^.{1,4}$/) ?? w);
+    });
+    if (targets.includes('maj')) {
+      at.forEach((i, j) => { if (j % 3 === 0) toks[i] = toks[i].replace(/\p{L}/u, (c) => c.toUpperCase()); else if (j % 3 === 2) toks[i] = toks[i].toUpperCase(); });
+    }
+    while (len() > DRILL_MAX && at.length) toks.splice(at.pop(), 1);
+    return toks.join(' ');
+  }
+
+  // The weakest signs and the pairs mixed up, or the letters picked by hand (6 at most per drill)
+  function drillPlan(from) {
+    const conf = confusions().filter(([a, b]) => kindOf(a) === kindOf(b));
+    if (from === 'pick') {
+      const chosen = picked.length > 6 ? shuffle(picked).slice(0, 6) : [...picked];
+      const pairs = conf.filter(([a, b]) => chosen.includes(a) && chosen.includes(b)).slice(0, 2).map(([a, b]) => [a, b]);
+      if (!pairs.length) for (let i = 0; i + 1 < chosen.length && pairs.length < 2; i += 2) pairs.push([chosen[i], chosen[i + 1]]);
+      return { targets: chosen, pairs };
+    }
+    const pairs = conf.slice(0, 2).map(([a, b]) => [a, b]);
+    return { targets: [...new Set([...pairs.flat(), ...weakSigns().map((s) => s.k)])].slice(0, 6), pairs };
+  }
+
+  let drill = null; // { from, title, text }: the 'weak' lesson
+  function startDrill(from) {
+    const { targets, pairs } = drillPlan(from);
+    if (!targets.length) { openPicker(); return; }
+    drill = { from, title: from === 'pick' ? 'Mes lettres' : 'Points faibles', text: makeDrill(targets, pairs) };
+    startEx('weak', 0);
   }
 
   /* ---------- Rendering ---------- */
@@ -1019,7 +1231,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     el.exSheet.innerHTML = `<div class="units">${html}</div>`;
     scrollToCursor();
 
-    const metaHTML = `<b>${esc(ex.title)}</b> · ${ex.li === 'custom' ? '' : `exercice ${ex.i + 1}/${ex.total} · `}${Math.min(ex.u, ex.units.length)}/${ex.units.length} · ${ex.errors} erreur${ex.errors > 1 ? 's' : ''}`;
+    const metaHTML = `<b>${esc(ex.title)}</b> · ${typeof ex.li === 'number' ? `exercice ${ex.i + 1}/${ex.total} · ` : ''}${Math.min(ex.u, ex.units.length)}/${ex.units.length} · ${ex.errors} erreur${ex.errors > 1 ? 's' : ''}`;
     el.meta.innerHTML = metaHTML;
     el.metaInline.innerHTML = metaHTML;
     $('#btn-hint').setAttribute('aria-pressed', String(ex.hint));
@@ -1103,9 +1315,50 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <div class="lesson-foot">${chips}<button class="btn primary small" data-li="${li}" data-start>${doneCount && doneCount < l.items.length ? 'Continuer' : 'Commencer'}</button></div>
       </article>`;
     }).join('');
+    renderWeak();
   }
 
+  const PICKABLE = LESSONS.filter((l) => ['aj', 'kt', 'uz', 'acc'].includes(l.id)).flatMap((l) => l.signs.map(([, c]) => c));
+  let picked = store.get('pick', null), picking = false;
+  function renderWeak() {
+    const weak = weakSigns().slice(0, 8), conf = confusions().slice(0, 3);
+    const seen = Object.values(stats).reduce((n, r) => n + r.length, 0);
+    picked ??= weak.map((s) => s.k).filter((k) => PICKABLE.includes(k));
+    const sign = (k) => `<span class="wk">${cellSVG(keyMask(k))}<b>${esc(k)}</b></span>`;
+    const body = weak.length || conf.length
+      ? `<div class="weak-body">${weak.length ? `<div class="weak-group"><span class="wlabel">Ratés ces derniers temps</span>
+          <div class="wsigns">${weak.map((s) => `<span class="wk">${cellSVG(keyMask(s.k))}<b>${esc(s.k)}</b><small>${Math.round((100 * s.miss) / s.n)} %</small></span>`).join('')}</div></div>` : ''}
+        ${conf.length ? `<div class="weak-group"><span class="wlabel">Souvent confondus</span>
+          <div class="wsigns">${conf.map(([a, b, n]) => `<span class="cf"><span>${sign(a)}<i>↔</i>${sign(b)}</span><small>${n} fois</small></span>`).join('')}</div></div>` : ''}</div>`
+      : `<p>${seen < 100 ? 'Cette carte se remplit au fil des exercices : elle montrera les signes que tu rates le plus et ceux que tu confonds. En attendant, choisis toi-même les lettres à travailler.' : 'Aucun signe raté souvent ces derniers temps.'}</p>`;
+    const foot = picking
+      ? `<div class="pick" role="group" aria-label="Lettres à travailler">${PICKABLE.map((c) => `<button class="pchip" data-k="${c}" aria-pressed="${picked.includes(c)}">${cellSVG(CHAR2MASK[c])}${c}</button>`).join('')}</div>
+        <div class="lesson-foot"><button class="btn small" data-act="pick">Fermer</button><span class="note" id="pick-note"></span><button class="btn primary small" data-act="go" id="pick-go">S’entraîner</button></div>`
+      : `<div class="lesson-foot"><button class="btn small" data-act="pick">Choisir mes lettres</button>${weak.length || conf.length ? '<button class="btn primary small" data-act="drill">S’entraîner</button>' : ''}</div>`;
+    $('#weak').innerHTML = `<h3>Points faibles</h3>${body}${foot}`;
+    if (picking) updatePickNote();
+  }
+  function updatePickNote() {
+    const n = picked.length;
+    $('#pick-note').textContent = !n ? 'Touche les lettres à travailler.' : n > 6 ? `${n} lettres, 6 par entraînement` : `${n} lettre${n > 1 ? 's' : ''}`;
+    $('#pick-go').disabled = !n;
+  }
+  $('#weak').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const { k, act } = btn.dataset;
+    if (k) {
+      picked = picked.includes(k) ? picked.filter((c) => c !== k) : [...picked, k];
+      store.set('pick', picked);
+      btn.setAttribute('aria-pressed', String(picked.includes(k)));
+      updatePickNote();
+    } else if (act === 'pick') { picking = !picking; renderWeak(); }
+    else if (act === 'drill') startDrill('stats');
+    else if (act === 'go') startDrill('pick');
+  });
+
   function openPicker() {
+    picking = false;
     renderPicker();
     updateCustomNote();
     $('#picker-close').hidden = !ex;
@@ -1159,6 +1412,21 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   $('#btn-settings').addEventListener('click', () => { releaseAll(); toggleSizePop(false); el.settings.hidden = false; });
   $('#settings-close').addEventListener('click', () => { el.settings.hidden = true; });
   el.settings.addEventListener('click', (e) => { if (e.target === el.settings) el.settings.hidden = true; });
+  const statsReset = $('#stats-reset');
+  statsReset.addEventListener('click', () => {
+    if (statsReset.classList.contains('confirm')) {
+      stats = {};
+      store.set('stats', stats);
+      resetStatsBtn();
+      toast('Erreurs effacées');
+      return;
+    }
+    statsReset.classList.add('confirm');
+    statsReset.textContent = 'Oui, effacer';
+    clearTimeout(resetStatsBtn.t);
+    resetStatsBtn.t = setTimeout(resetStatsBtn, 3000);
+  });
+  function resetStatsBtn() { statsReset.classList.remove('confirm'); statsReset.textContent = 'Effacer'; }
 
   /* ---------- Text size ---------- */
   const sizePop = $('#size-pop'), sizeBtn = $('#btn-size');
