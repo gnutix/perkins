@@ -1341,7 +1341,7 @@ div.toggle { cursor: default; }
     if (!settings.sound) return null;
     try {
       ac ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state === 'suspended') ac.resume();
+      if (ac.state === 'suspended') ac.resume()?.catch(() => { /* no audio device: silent */ });
     } catch { return null; }
     return ac;
   }
