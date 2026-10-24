@@ -37,6 +37,10 @@
   --hint: #2f74b8;
   --hint-bg: #dbe7f3;
   --hint-ink: #163f66;
+  --viz: #5d646b;      /* chart marks (the selected one in --ink) */
+  --miss-1: #f5d3cd;   /* signs missed at first try: 5 to 15 % */
+  --miss-2: #e59486;   /* 15 to 30 % */
+  --miss-3: #c2352a;   /* 30 % and more */
   --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
   --f-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", monospace;
   --cw: 22px;    /* free-typing cell width */
@@ -383,6 +387,73 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .lesson-foot .note { flex: 1 1 auto; }
 .btn.confirm { background: var(--err); color: #fff; box-shadow: none; }
 
+/* Progress: headline figures, then charts and the sign grid, all from the practice journal */
+#progress { z-index: 21; }
+.pg { display: flex; flex-direction: column; gap: 20px; max-width: 980px; transition: opacity .15s; }
+.pg.loading { opacity: .5; }
+.pg h3 { margin: 0 0 2px; font: 700 15px/1.25 var(--f-body); }
+.pg .sub { margin: 0 0 6px; font-size: 12px; color: var(--ink-soft); }
+.pg .empty { margin: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 8px; }
+.kpi { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 8px 10px 9px; border-radius: 12px; background: var(--card); border: 1px solid var(--rule); }
+.kpi span { font-size: 12px; color: var(--ink-soft); }
+.kpi b { font: 700 22px/1.15 var(--f-body); white-space: nowrap; }
+.kpi small { font-size: 11px; color: var(--ink-soft); }
+.pg-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.readout { margin: 0 0 2px; min-height: 18px; font-size: 13px; line-height: 18px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.readout b { color: var(--ink); font-weight: 600; }
+.chart { outline-offset: 4px; border-radius: 4px; }
+.chart svg { display: block; overflow: visible; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .base { stroke: #aeb3a8; stroke-width: 1; shape-rendering: crispEdges; }
+.chart text { font: 400 10.5px var(--f-body); fill: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.chart text.end { font-weight: 700; font-size: 11.5px; fill: var(--ink); }
+.chart .bar { fill: var(--viz); }
+.chart .bar.sel { fill: var(--ink); }
+.chart .line { fill: none; stroke: var(--viz); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chart .dot { fill: var(--viz); stroke: var(--paper); stroke-width: 2; }
+.chart .dot.sel { fill: var(--ink); }
+.chart .cross { stroke: var(--ink-soft); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; }
+.sg {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0;
+  padding: 5px 2px 4px; border-radius: 9px; cursor: pointer;
+  background: var(--card); border: 1px solid var(--rule); color: var(--ink);
+}
+.sg .top { display: flex; align-items: center; gap: 4px; }
+.sg .bc { width: 11px; height: 16.5px; }
+.sg b { font: 700 16px/1 var(--f-body); }
+.pg b.word { font: 600 10px/17px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
+.sg small { font: 600 10px/1.15 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink-soft); min-height: 11.5px; }
+.sg.m1 { background: var(--miss-1); border-color: var(--miss-1); }
+.sg.m2 { background: var(--miss-2); border-color: var(--miss-2); }
+.sg.m3 { background: var(--miss-3); border-color: var(--miss-3); color: #fff; }
+.sg.m2 small { color: var(--ink); }
+.sg.m3 small { color: #fff; }
+.sg.m3 .bc .on { fill: #fff; }
+.sg.m3 .bc .off { fill: #fff; opacity: .45; }
+.sg.few { opacity: .55; }
+.sg[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 8px 0 0; font-size: 12px; color: var(--ink-soft); }
+.legend i { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: -2px; border-radius: 3px; background: var(--card); border: 1px solid var(--rule); }
+.legend i.m1 { background: var(--miss-1); border-color: var(--miss-1); }
+.legend i.m2 { background: var(--miss-2); border-color: var(--miss-2); }
+.legend i.m3 { background: var(--miss-3); border-color: var(--miss-3); }
+.sg-detail { margin: 8px 0 0; min-height: 36px; font-size: 13px; color: var(--ink-soft); }
+.sg-detail b { color: var(--ink); }
+.cf-list { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.cf i.to { line-height: 24px; }
+.cf-list .cf small { font: 400 12px/1.2 var(--f-body); }
+.lessons-done { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 20px; }
+.ld { display: grid; grid-template-columns: 1fr 64px 34px; align-items: center; gap: 8px; font-size: 13px; }
+.ld span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld .meter { height: 6px; border-radius: 3px; background: var(--paper-2); overflow: hidden; }
+.ld .meter i { display: block; height: 100%; border-radius: 3px; background: var(--ok); }
+.ld b { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.pg-note { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--hint-bg); color: var(--hint-ink); font-size: 13px; }
+
 .modal {
   position: absolute; inset: 0; z-index: 30;
   display: grid; place-items: center; padding: 16px;
@@ -518,6 +589,7 @@ div.toggle { cursor: default; }
   <div class="overlay gutter" id="picker" hidden>
     <div class="overlay-head">
       <h2>Exercices</h2>
+      <button class="btn small" id="picker-progress">Progrès</button>
       <button class="btn small" id="picker-free">Mode libre</button>
       <button class="ibtn" id="picker-close" aria-label="Revenir à l’exercice" title="Revenir à l’exercice">
         <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -535,6 +607,16 @@ div.toggle { cursor: default; }
       </article>
     </div>
     <p class="overlay-foot">Chaque erreur arrête la frappe. « Indice » allume les touches à presser. Un exercice réussi devient vert.</p>
+  </div>
+
+  <div class="overlay gutter" id="progress" hidden>
+    <div class="overlay-head">
+      <button class="ibtn" id="progress-back" aria-label="Revenir aux exercices" title="Revenir aux exercices">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2>Progrès</h2>
+    </div>
+    <div class="pg" id="progress-body"></div>
   </div>
 
   <div class="modal" id="settings" hidden>
@@ -750,68 +832,277 @@ div.toggle { cursor: default; }
   let ex = null;
 
   /* ---------- Practice journal ---------- */
-  // Every sign typed in practice is kept in IndexedDB ('events'), with a running summary per day
-  // ('days') for the progress page. It all stays on the phone; a failed write never stops practice.
+  // Every sign typed (exercises, free typing, reading) is kept in IndexedDB ('events'), with a running
+  // summary per day ('days') for the progress page. It all stays on the phone, and a failed write
+  // never stops practice: each event first lands in a small outbox in localStorage, then moves into
+  // IndexedDB in one transaction with its day's summary. The outbox holds it through whatever iOS does
+  // to a page left in the background (a closed connection, an aborted transaction), a hung or refused
+  // open, a full disk or a reload; the unique 'id' index keeps a retried event from counting twice.
+  //
+  // Events: { v: 1, id, t, type, mode, … }
+  //   sign, mode 'ex':   ex, ch, k (sign key: lowercase char, 'maj', 'num', null for space), exp, got
+  //                      (dot masks), ok, first, hint, dt (ms since the previous one), keys, lift
+  //   sign, mode 'free': got, ch (label in context, '?' for no sign), at (position), dt, keys, lift
+  //   erase / newline, mode 'free': got, ch, at, dt
+  //   read, mode 'read': ch (expected), got (typed), k, ok, first, hint, dt
+  //   done: mode, ex, signs, errors, hints, ms, accuracy
+  // Days: { day: 'YYYY-MM-DD', ms (practice time, every dt capped at 30 s), done,
+  //   signs, errors, hints, bySign (exercises), readSigns, readErrors, readMs, readBySign,
+  //   freeSigns, freeErrors ('?'), freeErased, freeMs, freeTime, freeTimed (free typing speed) }
+  //   bySign / readBySign: { k: [first tries, misses, time sum (ms, right and unhinted, capped 10 s), timed] }
   const journal = (() => {
-    let dbp = null, persisted = false;
-    const open = () => (dbp ||= new Promise((resolve, reject) => {
-      const req = indexedDB.open('sixpoints', 1);
-      req.onupgradeneeded = () => {
-        req.result.createObjectStore('events', { autoIncrement: true }).createIndex('t', 't');
-        req.result.createObjectStore('days', { keyPath: 'day' });
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    }).catch(() => null));
+    const DB = 'sixpoints', VERSION = 2, OUTBOX = 'sixpoints.journal-outbox', OUTBOX_MAX = 1000;
+    const OPEN_TIMEOUT = 8000, BATCH = 200, LOST = ['InvalidStateError', 'UnknownError', 'TransactionInactiveError', 'AbortError'];
+    const health = { error: null, persisted: null };
+    let dbp = null, live = null, flushing = null, retryAt = 0, delay = 0, timer = 0, memBox = null, seq = 0, asked = false;
+
     const dayOf = (t) => {
       const d = new Date(t);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     };
-    async function write(ev, summarise) {
-      try {
-        const db = await open();
-        if (!db) return;
-        if (!persisted) { persisted = true; navigator.storage?.persist?.().catch(() => {}); }
-        const tx = db.transaction(['events', 'days'], 'readwrite');
-        tx.objectStore('events').add(ev);
-        const days = tx.objectStore('days'), req = days.get(dayOf(ev.t));
-        req.onsuccess = () => {
-          const row = req.result || { day: dayOf(ev.t), ms: 0, signs: 0, errors: 0, hints: 0, done: 0, bySign: {} };
-          summarise(row);
-          days.put(row);
-        };
-      } catch { /* storage refused or full */ }
+    // Rows written by an older version lack the newer fields: every read and write fills them in
+    const blankDay = (day) => ({
+      day, ms: 0, signs: 0, errors: 0, hints: 0, done: 0, bySign: {},
+      readSigns: 0, readErrors: 0, readMs: 0, readBySign: {},
+      freeSigns: 0, freeErrors: 0, freeErased: 0, freeMs: 0, freeTime: 0, freeTimed: 0,
+    });
+    const normDay = (row) => ({ ...blankDay(row.day), ...row });
+
+    // Schema, oldest first, keyed on the version the phone has. v1: events + days. v2: a unique 'id'
+    // on events (v1 events have none and stay as they are). Never delete or recreate a store here:
+    // it holds her history.
+    function upgrade(db, from, tx) {
+      if (from < 1) {
+        db.createObjectStore('events', { autoIncrement: true }).createIndex('t', 't');
+        db.createObjectStore('days', { keyPath: 'day' });
+      }
+      if (from < 2) tx.objectStore('events').createIndex('id', 'id', { unique: true });
     }
-    const readAll = async (store, range) => {
+
+    // A connection the browser has closed throws InvalidStateError from transaction(); an empty scope
+    // probes for that without starting anything (a live one throws InvalidAccessError instead)
+    const usable = (db) => { try { db.transaction([]); } catch (e) { return e.name !== 'InvalidStateError'; } return true; };
+    const forget = (db) => { if (live === db) { live = null; dbp = null; } };
+    function connect() {
+      const p = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB, VERSION);
+        const hung = setTimeout(() => reject(new Error('IndexedDB ne répond pas')), OPEN_TIMEOUT);
+        req.onupgradeneeded = (e) => upgrade(req.result, e.oldVersion, req.transaction);
+        // Another tab keeps an older version open: the upgrade waits until it lets go
+        req.onblocked = () => console.warn('journal : une autre fenêtre garde la base ouverte');
+        req.onsuccess = () => {
+          clearTimeout(hung);
+          const db = req.result;
+          if (dbp !== p) { db.close(); return; } // given up on as hung
+          // A newer version in another tab wants to upgrade: let go, the next write re-opens
+          db.onversionchange = () => { db.close(); forget(db); };
+          // The browser closed it (storage pressure, a page reclaimed in the background)
+          db.onclose = () => forget(db);
+          live = db;
+          resolve(db);
+          askPersist();
+        };
+        req.onerror = () => { clearTimeout(hung); reject(req.error); };
+      });
+      dbp = p;
+      p.catch(() => { if (dbp === p) dbp = null; }); // never keep a failed open
+      return p;
+    }
+    function open() {
+      const p = dbp || connect();
+      return p.then((db) => {
+        if (usable(db)) return db;
+        forget(db);
+        return dbp || connect();
+      });
+    }
+    // A transaction cut off with its connection (its requests then fail with AbortError) gets one more
+    // go on a fresh one; a full disk or a refused open waits for the next flush instead
+    async function withDb(fn) {
+      const db = await open();
+      try { return await fn(db); } catch (e) {
+        if (!(e?.lost || LOST.includes(e?.name))) throw e;
+        forget(db);
+        return fn(await open());
+      }
+    }
+    // Settles on 'complete'. An abort at commit (a full disk, a closed connection) fires no 'error',
+    // so both are failures; a handler that throws aborts the lot, so nothing is half-written.
+    function run(db, stores, mode, body) {
+      return new Promise((resolve, reject) => {
+        const t = db.transaction(stores, mode);
+        let out;
+        t.oncomplete = () => resolve(out);
+        t.onerror = (e) => reject(e.target.error || t.error || lostError());
+        t.onabort = () => reject(t.error || lostError());
+        const guard = (fn) => (e) => { try { fn(e); } catch (err) { reject(err); try { t.abort(); } catch { /* over */ } } };
+        body(t, guard, (v) => { out = v; });
+      });
+    }
+    const lostError = () => Object.assign(new Error('transaction interrompue'), { name: 'AbortError', lost: true });
+
+    function tally(by, k, ev) {
+      if (!ev.first || !k) return;
+      const s = (by[k] ||= [0, 0, 0, 0]);
+      s[0]++;
+      if (!ev.ok) s[1]++;
+      else if (ev.dt != null && !ev.hint) { s[2] += Math.min(ev.dt, 10000); s[3]++; }
+    }
+    // The day row as a function of the event alone, so an event replayed from the outbox counts the same
+    function summarise(row, ev) {
       try {
-        const db = await open();
-        if (!db) return [];
-        return await new Promise((resolve) => {
-          const os = db.transaction(store).objectStore(store);
-          const req = range ? os.index('t').getAll(range) : os.getAll();
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => resolve([]);
-        });
-      } catch { return []; }
-    };
-    return {
-      // ev: what was expected and typed, plus timing; counted per sign on first tries only
-      sign(ev) {
-        write({ v: 1, t: Date.now(), type: 'sign', ...ev }, (row) => {
+        const dt = ev.dt == null ? 0 : Math.min(ev.dt, 30000);
+        row.ms += dt;
+        if (ev.type === 'done') row.done++;
+        else if (ev.mode === 'free') {
+          row.freeMs += dt;
+          if (ev.type === 'erase') row.freeErased++;
+          else if (ev.type === 'sign') {
+            row.freeSigns++;
+            if (ev.ch === '?') row.freeErrors++;
+            else if (ev.got && ev.dt != null) { row.freeTime += Math.min(ev.dt, 10000); row.freeTimed++; }
+          }
+        } else if (ev.type === 'read') {
+          row.readMs += dt;
+          row.readSigns++;
+          if (!ev.ok) row.readErrors++;
+          tally(row.readBySign, ev.k, ev);
+        } else if (ev.type === 'sign') {
           row.signs++;
           if (!ev.ok) row.errors++;
           if (ev.ok && ev.hint) row.hints++;
-          if (ev.dt != null) row.ms += Math.min(ev.dt, 30000);
-          if (!ev.first || !ev.k) return;
-          const s = (row.bySign[ev.k] ||= [0, 0, 0, 0]); // tries, misses, time sum (ms), timed tries
-          s[0]++;
-          if (!ev.ok) s[1]++;
-          else if (ev.dt != null && !ev.hint) { s[2] += Math.min(ev.dt, 10000); s[3]++; }
+          tally(row.bySign, ev.k, ev);
+        }
+      } catch (e) { console.warn('journal : événement non résumé', e); } // kept all the same
+    }
+
+    // One transaction per batch: the events, and their days' rows read, updated and written back
+    function commit(db, batch) {
+      return run(db, ['events', 'days'], 'readwrite', (t, guard) => {
+        const events = t.objectStore('events'), days = t.objectStore('days');
+        const rows = new Map(), keys = [...new Set(batch.map((ev) => dayOf(ev.t)))];
+        let left = keys.length, todo = batch.length;
+        const added = guard(() => { if (--todo === 0) rows.forEach((row) => days.put(row)); });
+        keys.forEach((day) => {
+          const get = days.get(day);
+          get.onsuccess = guard(() => {
+            rows.set(day, get.result ? normDay(get.result) : blankDay(day));
+            if (--left) return;
+            for (const ev of batch) {
+              const add = events.add(ev);
+              add.onsuccess = guard(() => { summarise(rows.get(dayOf(ev.t)), ev); added(); });
+              // Already stored by an earlier try whose answer was lost: skip it, keep the rest
+              add.onerror = (e) => {
+                if (add.error?.name !== 'ConstraintError') return;
+                e.preventDefault();
+                e.stopPropagation();
+                added();
+              };
+            }
+          });
         });
+      });
+    }
+
+    // The outbox: localStorage, or memory when storage refuses (then it lasts as long as the page)
+    const box = {
+      read() {
+        if (memBox) return memBox;
+        let raw;
+        try { raw = localStorage.getItem(OUTBOX); } catch { return (memBox = []); }
+        try { const list = JSON.parse(raw); return Array.isArray(list) ? list : []; } catch { return []; }
       },
-      done(ev) { write({ v: 1, t: Date.now(), type: 'done', ...ev }, (row) => { row.done++; }); },
-      days: () => readAll('days'),
-      events: (since = 0) => readAll('events', IDBKeyRange.lowerBound(since)),
+      write(list) {
+        if (!memBox) {
+          try {
+            if (list.length) localStorage.setItem(OUTBOX, JSON.stringify(list)); else localStorage.removeItem(OUTBOX);
+            return;
+          } catch { /* full or refused */ }
+        }
+        memBox = list;
+      },
+    };
+
+    function put(type, ev) {
+      try {
+        const t = Date.now();
+        const rec = { v: 1, t, type, ...ev, id: `${t.toString(36)}.${(seq++).toString(36)}.${Math.random().toString(36).slice(2, 8)}` };
+        const list = box.read();
+        list.push(rec);
+        if (list.length > OUTBOX_MAX) list.splice(0, list.length - OUTBOX_MAX);
+        box.write(list);
+        flush();
+      } catch (e) { console.warn('journal :', e); }
+    }
+
+    // Moves the outbox into IndexedDB, one batch at a time; on failure, tries again later, up to a minute apart
+    function flush() {
+      if (flushing) return flushing;
+      if (Date.now() < retryAt || !box.read().length) return Promise.resolve();
+      // Cleared in a .finally() callback, which always runs after this assignment
+      flushing = drain().finally(() => { flushing = null; });
+      return flushing;
+    }
+    async function drain() {
+      try {
+        for (let batch = box.read().slice(0, BATCH); batch.length; batch = box.read().slice(0, BATCH)) {
+          await withDb((db) => commit(db, batch));
+          const stored = new Set(batch.map((ev) => ev.id));
+          box.write(box.read().filter((ev) => !stored.has(ev.id)));
+        }
+        health.error = null;
+        delay = 0;
+      } catch (e) {
+        health.error = e?.name || 'Error';
+        delay = Math.min(60000, (delay || 1000) * 2);
+        retryAt = Date.now() + delay;
+        clearTimeout(timer);
+        timer = setTimeout(flush, delay);
+        console.warn('journal : écriture reportée', e);
+      }
+    }
+
+    // Asks the browser to keep this data when space runs short; Safari grants it to a home-screen app
+    function askPersist() {
+      if (asked) return;
+      asked = true;
+      try {
+        navigator.storage?.persisted?.()
+          .then((on) => on || navigator.storage.persist())
+          .then((on) => { health.persisted = on; }, () => {});
+      } catch { /* unsupported */ }
+    }
+
+    // Reads wait (a little) for the outbox, so what was just typed shows
+    async function readAll(name, since) {
+      try {
+        await Promise.race([flush(), new Promise((r) => setTimeout(r, 1500))]);
+        return await withDb((db) => run(db, name, 'readonly', (t, guard, done) => {
+          const os = t.objectStore(name);
+          const req = since == null ? os.getAll() : os.index('t').getAll(IDBKeyRange.lowerBound(since));
+          req.onsuccess = () => done(req.result);
+        }));
+      } catch (e) {
+        health.error = e?.name || 'Error';
+        console.warn('journal : lecture impossible', e);
+        return [];
+      }
+    }
+
+    setTimeout(flush, 1500); // whatever an earlier visit left in the outbox
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { retryAt = 0; flush(); } });
+
+    const readKey = (ch) => (typeof ch === 'string' && ch.trim() ? ch.toLowerCase() : null);
+    return {
+      sign: (ev) => put('sign', ev), // exercise (exInput) or free typing (onCell)
+      read: (ev) => put('read', { mode: 'read', ...ev, k: ev?.k ?? readKey(ev?.ch) }),
+      erase: (ev) => put('erase', ev),
+      newline: (ev) => put('newline', ev),
+      done: (ev) => put('done', ev),
+      days: () => readAll('days').then((rows) => rows.map(normDay)),
+      events: (since = 0) => readAll('events', since),
+      health: () => ({ ...health, pending: box.read().length }),
+      dayOf,
     };
   })();
 
@@ -822,7 +1113,7 @@ div.toggle { cursor: default; }
     machine: $('#machine'), freeView: $('#free-view'), exView: $('#ex-view'), exSheet: $('#ex-sheet'),
     banner: $('#banner'), meta: $('#ex-meta'), metaInline: $('#ex-meta-inline'),
     preview: $('#preview'), previewLabel: $('#preview-label'),
-    done: $('#done'), picker: $('#picker'), settings: $('#settings'), toast: $('#toast'),
+    done: $('#done'), picker: $('#picker'), settings: $('#settings'), progress: $('#progress'), toast: $('#toast'),
     space: $('.key.space'),
   };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -881,7 +1172,7 @@ div.toggle { cursor: default; }
   const keyFor = (k) => (/^\d$/.test(k) ? $(`.key[data-dot="${k}"]`) : $(`.key[data-fn="${k}"]`));
   const refreshKey = (key) => key.classList.toggle('down', [...sources.values()].includes(key));
   const blocked = () => mode === 'ex' && ex && (ex.locked || ex.done);
-  const overlayOpen = () => !el.picker.hidden || !el.settings.hidden;
+  const overlayOpen = () => !el.picker.hidden || !el.settings.hidden || !el.progress.hidden;
 
   function keyDown(src, key) {
     if (!key || sources.has(src) || overlayOpen()) return;
@@ -950,6 +1241,7 @@ div.toggle { cursor: default; }
   const CODES = { KeyF: '1', KeyD: '2', KeyS: '3', KeyJ: '4', KeyK: '5', KeyL: '6', Space: 'space', Enter: 'enter', Backspace: 'back' };
   window.addEventListener('keydown', (e) => {
     if (e.target.closest?.('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Escape' && !el.progress.hidden) { closeProgress(); return; }
     if (e.key === 'Escape') { closeOverlays(); if (mode === 'ex' && !ex) setMode('free'); return; }
     const k = CODES[e.code];
     if (!k || overlayOpen()) return;
@@ -972,9 +1264,18 @@ div.toggle { cursor: default; }
     return t.kind === 'space' ? 'espace' : t.label;
   }
 
+  // Free typing in the journal: dt is the time since the previous action, null after a pause of 30 s
+  let freeAt = null;
+  function freeDt() {
+    const now = performance.now(), dt = freeAt != null && now - freeAt <= 30000 ? Math.round(now - freeAt) : null;
+    freeAt = now;
+    return dt;
+  }
+
   function onCell(m) {
     lastShown = { m, label: contextLabel(m) };
     if (mode === 'free') {
+      journal.sign({ mode: 'free', got: m, ch: lastShown.label, at: freeTokens.length, dt: freeDt(), ...lastChord });
       freeTokens.push(m);
       store.set('free', freeTokens);
       sfx.key();
@@ -989,6 +1290,8 @@ div.toggle { cursor: default; }
 
   function onBack() {
     if (mode !== 'free' || !freeTokens.length) return;
+    const gone = decode(freeTokens).at(-1);
+    journal.erase({ mode: 'free', got: gone.m, ch: gone.kind === 'space' ? 'espace' : gone.kind === 'nl' ? '\n' : gone.label, at: freeTokens.length - 1, dt: freeDt() });
     freeTokens.pop();
     store.set('free', freeTokens);
     lastShown = null;
@@ -998,6 +1301,7 @@ div.toggle { cursor: default; }
 
   function onEnter() {
     if (mode !== 'free') return;
+    journal.newline({ mode: 'free', at: freeTokens.length, dt: freeDt() });
     freeTokens.push(NL);
     store.set('free', freeTokens);
     lastShown = null;
@@ -1447,7 +1751,7 @@ div.toggle { cursor: default; }
     el.picker.hidden = false;
     releaseAll();
   }
-  function closeOverlays() { el.picker.hidden = true; el.settings.hidden = true; toggleSizePop(false); }
+  function closeOverlays() { el.picker.hidden = true; el.settings.hidden = true; el.progress.hidden = true; toggleSizePop(false); }
 
   $('#lesson-list').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -1509,6 +1813,370 @@ div.toggle { cursor: default; }
     resetStatsBtn.t = setTimeout(resetStatsBtn, 3000);
   });
   function resetStatsBtn() { statsReset.classList.remove('confirm'); statsReset.textContent = 'Effacer'; }
+
+  /* ---------- Progress ---------- */
+  // Headline figures first, then practice time per day, accuracy and speed per week, every sign
+  // coloured by its misses, the signs mixed up, reading and free typing when there are any, and the
+  // lessons. Everything comes from the journal's day rows, except the confusions (last 4 weeks of events).
+  const pgBody = $('#progress-body');
+  const RECENT = 28, WEEKS = 8;
+  let pg = null; // { days, events, sel: { day, acc, spm, sign } } and what the charts draw
+
+  const NBSP = ' ', NNBSP = ' ';
+  const num = (v, d = 0) => v.toLocaleString('fr', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pct = (v) => `${Math.round(v)}${NNBSP}%`;
+  const secs = (ms) => `${num(ms / 1000, 1)}${NBSP}s`;
+  const times = (n) => `${num(n)}${NBSP}fois`;
+  function dur(ms) {
+    const min = Math.round(ms / 60000);
+    if (ms > 0 && min < 1) return `moins d’1${NBSP}min`;
+    return min < 60 ? `${min}${NBSP}min` : `${Math.floor(min / 60)}${NBSP}h${NBSP}${String(min % 60).padStart(2, '0')}`;
+  }
+  const dateOf = (day) => { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (day, n) => { const d = dateOf(day); d.setDate(d.getDate() + n); return journal.dayOf(d.getTime()); };
+  const mondayOf = (day) => addDays(day, -((dateOf(day).getDay() + 6) % 7));
+  const fmtDay = (day, o) => dateOf(day).toLocaleDateString('fr', o);
+  const shortDay = (day) => fmtDay(day, { day: 'numeric', month: 'short' });
+  const upFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const practised = (r) => !!r && (r.ms > 0 || r.signs > 0 || r.freeSigns > 0 || r.readSigns > 0 || r.done > 0);
+  const sum = (rows, f) => rows.reduce((n, r) => n + (f(r) || 0), 0);
+  const addInto = (into, by) => {
+    for (const [k, s] of Object.entries(by || {})) {
+      if (!Array.isArray(s)) continue;
+      const a = (into[k] ||= [0, 0, 0, 0]);
+      for (let i = 0; i < 4; i++) a[i] += +s[i] || 0;
+    }
+    return into;
+  };
+  const f1 = (v) => Math.round(v * 10) / 10;
+  const niceStep = (raw) => {
+    const mag = 10 ** Math.floor(Math.log10(raw > 0 ? raw : 1));
+    return [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => s >= raw - 1e-9);
+  };
+
+  // Every sign of the lessons, in their order, then any other the journal met (from « Mon texte »)
+  const LESSON_SIGNS = [...new Map(LESSONS.flatMap((l) => l.signs.map(([m, c]) => [c, m]))).keys()];
+  const signName = (k) => (k === 'maj' ? 'majuscule' : k === 'num' ? 'nombre' : k);
+  const signLabel = (k) => (k === 'maj' || k === 'num' ? `<b class="word">${k}</b>` : `<b>${esc(k)}</b>`);
+  // What a typed cell reads as, next to the sign that was expected
+  function typedOf(k, got) {
+    if (got === SPACE) return 'espace';
+    if (got === CAP) return 'maj';
+    if (got === NUM) return 'num';
+    if (DIGITS[k] && MASK2DIGIT[got] !== undefined) return MASK2DIGIT[got];
+    return MASK2CHAR[got] ?? '?';
+  }
+  const labelKey = (ch) => (ch === 'maj' || ch === 'num' ? ch
+    : typeof ch === 'string' && [...ch].length === 1 && ch.trim() && ch !== '?' ? ch.toLowerCase() : null);
+
+  // Expected → typed, from first tries missed in exercises, and from corrections in free typing:
+  // one cell erased, then a new sign at the same place, means she wrote the erased one for the new one
+  // (erasing several cells before retyping is rewriting, not a confusion)
+  function confusionsFrom(events) {
+    const pairs = new Map();
+    const note = (k, got, typed, free) => {
+      if (!k || typed === k) return;
+      const id = `${k} ${typed} ${typed === '?' ? got : ''}`;
+      const p = pairs.get(id) || { k, got, typed, n: 0, free: 0 };
+      p.n++;
+      if (free) p.free++;
+      pairs.set(id, p);
+    };
+    let prev = null, prev2 = null;
+    for (const e of events) {
+      if (e.mode === 'free') {
+        if (e.type === 'sign' && prev?.type === 'erase' && prev2?.type !== 'erase' && prev.at === e.at && prev.got > 0) {
+          note(labelKey(e.ch), prev.got, labelKey(prev.ch) ?? '?', true);
+        }
+        prev2 = prev;
+        prev = e;
+      } else if (e.type === 'sign' && e.first && !e.ok && e.k) {
+        note(e.k, e.got, typedOf(e.k, e.got), false);
+      }
+    }
+    return [...pairs.values()].sort((a, b) => b.n - a.n);
+  }
+
+  async function openProgress() {
+    releaseAll();
+    el.progress.hidden = false;
+    el.progress.scrollTop = 0;
+    pgBody.classList.add('loading');
+    const since = dateOf(addDays(journal.dayOf(Date.now()), -(RECENT - 1))).getTime();
+    const [days, events] = await Promise.all([journal.days(), journal.events(since)]);
+    pgBody.classList.remove('loading');
+    if (el.progress.hidden) return;
+    pg = { days, events, sel: {} };
+    renderProgress();
+  }
+  function closeProgress() { el.progress.hidden = true; }
+
+  function renderProgress() {
+    const { days } = pg;
+    const today = journal.dayOf(Date.now());
+    const byDay = new Map(days.map((r) => [r.day, r]));
+    const kpi = (label, value, sub = '') => `<div class="kpi"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const sec = (title, sub, body) => `<section><h3>${title}</h3>${sub ? `<p class="sub">${sub}</p>` : ''}${body}</section>`;
+    const health = journal.health();
+    const notes = [];
+    if (health.pending && health.error) notes.push(`${num(health.pending)} signe${health.pending > 1 ? 's attendent' : ' attend'} encore d’entrer dans le journal. ${health.pending > 1 ? 'Ils y seront ajoutés' : 'Il y sera ajouté'} dès que le téléphone le permet.`);
+    if (health.persisted === false && 'standalone' in navigator && !navigator.standalone) notes.push('Pour que Safari garde ce journal, ouvre Six Points depuis l’écran d’accueil.');
+    const noteHTML = notes.map((n) => `<p class="pg-note">${n}</p>`).join('');
+
+    // Lessons, from the exercises' own record (older than the journal)
+    const progress = store.get('progress', {});
+    const lessons = LESSONS.map((l) => ({ title: l.title, total: l.items.length, n: l.items.filter((_, i) => progress[l.id + ':' + i] != null).length }));
+    const finished = lessons.filter((l) => l.n === l.total).length;
+    const lessonsHTML = lessons.some((l) => l.n) ? sec('Leçons', `${finished} terminée${finished > 1 ? 's' : ''} sur ${lessons.length}.`,
+      `<div class="lessons-done">${lessons.map((l) => `<div class="ld"><span>${esc(l.title)}</span><span class="meter"><i style="width:${(100 * l.n) / l.total}%"></i></span><b>${l.n}/${l.total}</b></div>`).join('')}</div>`) : '';
+
+    if (!days.some(practised)) {
+      pgBody.innerHTML = `<p class="empty"><b>Rien pour l’instant.</b> Ici s’afficheront ton temps d’entraînement jour après jour,
+        ta précision et ta vitesse semaine après semaine, chaque signe coloré selon tes erreurs, et les signes que tu confonds.
+        Tout se remplit à mesure que tu t’entraînes.</p>${lessonsHTML}${noteHTML}`;
+      return;
+    }
+
+    // Headline figures
+    const weekRows = [];
+    for (let d = mondayOf(today); d <= today; d = addDays(d, 1)) if (byDay.has(d)) weekRows.push(byDay.get(d));
+    let streak = 0;
+    for (let d = practised(byDay.get(today)) ? today : addDays(today, -1); practised(byDay.get(d)); d = addDays(d, -1)) streak++;
+    const signs = sum(days, (r) => r.signs), errors = sum(days, (r) => r.errors);
+    const kpis = `<div class="kpis">
+      ${kpi('Aujourd’hui', dur(byDay.get(today)?.ms ?? 0))}
+      ${kpi('Cette semaine', dur(sum(weekRows, (r) => r.ms)))}
+      ${kpi('Jours d’affilée', num(streak), streak && !practised(byDay.get(today)) ? 'pas encore aujourd’hui' : '')}
+      ${kpi('Signes tapés', num(signs + sum(days, (r) => r.freeSigns)))}
+      ${kpi('Précision', signs ? pct((100 * (signs - errors)) / signs) : '—', 'en exercice')}
+    </div>`;
+
+    // Practice time over the last 4 weeks, a slot for every day
+    const daysList = [];
+    for (let i = RECENT - 1; i >= 0; i--) {
+      const day = addDays(today, -i);
+      daysList.push({ day, ms: byDay.get(day)?.ms ?? 0 });
+    }
+    // Accuracy and speed per week, from the first week with any
+    let weeks = [];
+    for (let i = WEEKS - 1; i >= 0; i--) {
+      const start = addDays(mondayOf(today), -7 * i), rows = [];
+      for (let j = 0; j < 7; j++) if (byDay.has(addDays(start, j))) rows.push(byDay.get(addDays(start, j)));
+      const s = sum(rows, (r) => r.signs), e = sum(rows, (r) => r.errors);
+      const by = rows.reduce((a, r) => addInto(a, r.bySign), {});
+      const time = sum(Object.values(by), (a) => a[2]) + sum(rows, (r) => r.freeTime);
+      const timed = sum(Object.values(by), (a) => a[3]) + sum(rows, (r) => r.freeTimed);
+      weeks.push({ start, signs: s, acc: s >= 10 ? (100 * (s - e)) / s : null, spm: timed >= 10 && time > 0 ? (60000 * timed) / time : null });
+    }
+    while (weeks.length && weeks[0].acc == null && weeks[0].spm == null) weeks = weeks.slice(1);
+    pg.charts = { day: daysList, weeks, today };
+    pg.sel.day ??= daysList.length - 1;
+    pg.sel.acc ??= weeks.length - 1;
+    pg.sel.spm ??= weeks.length - 1;
+    const weeksHTML = weeks.length < 2
+      ? '<p class="sub">Les courbes de précision et de vitesse apparaissent après deux semaines d’entraînement.</p>'
+      : `<div class="pg-two">
+        ${sec('Précision par semaine', 'Signes justes en exercice.', '<p class="readout" id="rd-acc"></p><div class="chart" data-chart="acc" tabindex="0"></div>')}
+        ${sec('Vitesse par semaine', 'Signes par minute, pauses exclues.', '<p class="readout" id="rd-spm"></p><div class="chart" data-chart="spm" tabindex="0"></div>')}
+      </div>`;
+
+    // Every sign over the last 4 weeks: colour for misses at first try, time when typed right
+    const from = addDays(today, -(RECENT - 1));
+    const agg = days.filter((r) => r.day >= from).reduce((a, r) => addInto(a, r.bySign), {});
+    pg.agg = agg;
+    pg.conf = confusionsFrom(pg.events);
+    const keys = [...LESSON_SIGNS, ...Object.keys(agg).filter((k) => !LESSON_SIGNS.includes(k) && keyMask(k) !== undefined)];
+    const tiles = keys.map((k) => {
+      const [n, miss, time, timed] = agg[k] || [0, 0, 0, 0];
+      const rate = n ? miss / n : 0;
+      const cls = !n ? '' : n < 5 ? ' few' : rate >= 0.3 ? ' m3' : rate >= 0.15 ? ' m2' : rate >= 0.05 ? ' m1' : '';
+      const label = `${signName(k)} : ${n ? `${n} essais, ${pct(100 * rate)} ratés${timed ? `, ${secs(time / timed)}` : ''}` : 'pas encore tapé'}`;
+      return `<button class="sg${cls}" data-k="${esc(k)}" aria-pressed="${pg.sel.sign === k}" aria-label="${esc(label)}">
+        <span class="top">${cellSVG(keyMask(k))}${signLabel(k)}</span>
+        <small>${n >= 5 ? pct(100 * rate) : n ? 'peu' : ''}</small><small>${timed >= 3 ? secs(time / timed) : ''}</small></button>`;
+    }).join('');
+    const grid = sec('Chaque signe', 'Sur les 4 dernières semaines : la part de ratés au premier essai, puis le temps pour le taper juste. Touche un signe pour le détail.',
+      `<div class="sgrid">${tiles}</div>
+      <p class="legend"><span><i></i>moins de 5${NNBSP}%</span><span><i class="m1"></i>5 à 15${NNBSP}%</span><span><i class="m2"></i>15 à 30${NNBSP}%</span><span><i class="m3"></i>30${NNBSP}% et plus</span><span>« peu » : moins de 5 essais</span></p>
+      <p class="sg-detail" id="sg-detail" aria-live="polite"></p>`);
+
+    // Signs mixed up
+    const conf = pg.conf.slice(0, 8);
+    const typedCell = (p) => `<span class="wk">${cellSVG(p.got)}${p.typed === 'maj' || p.typed === 'num' || p.typed === 'espace' ? `<b class="word">${p.typed}</b>` : `<b>${esc(p.typed)}</b>`}</span>`;
+    const confHTML = conf.length ? sec('Souvent confondus', 'Le signe attendu, puis ce que tu as tapé à la place (y compris ce que tu as corrigé toi-même en mode libre).',
+      `<div class="cf-list">${conf.map((p) => `<span class="cf"><span><span class="wk">${cellSVG(keyMask(p.k) ?? 0)}${signLabel(p.k)}</span><i class="to">→</i>${typedCell(p)}</span>
+        <small>${times(p.n)}${p.free ? `, dont ${num(p.free)} en libre` : ''}</small></span>`).join('')}</div>`) : '';
+
+    // Reading, once the reading mode has been used
+    let readHTML = '';
+    const readSigns = sum(days, (r) => r.readSigns);
+    if (readSigns) {
+      const readErrors = sum(days, (r) => r.readErrors);
+      const rby = days.reduce((a, r) => addInto(a, r.readBySign), {});
+      const rTime = sum(Object.values(rby), (a) => a[2]), rTimed = sum(Object.values(rby), (a) => a[3]);
+      const weak = Object.entries(rby).filter(([, a]) => a[0] >= 5 && a[1] > 0)
+        .map(([k, a]) => ({ k, rate: a[1] / a[0] })).sort((a, b) => b.rate - a.rate).slice(0, 8);
+      readHTML = sec('Lecture', '',
+        `<div class="kpis">${kpi('Signes lus', num(readSigns))}${kpi('Justes', pct((100 * (readSigns - readErrors)) / readSigns))}
+          ${kpi('Par signe', rTimed ? secs(rTime / rTimed) : '—', 'quand il est juste')}${kpi('Temps', dur(sum(days, (r) => r.readMs)))}</div>
+        ${weak.length ? `<p class="sub" style="margin-top:10px">Les plus ratés en lecture</p><div class="wsigns">${weak.map((s) => `<span class="wk">${cellSVG(keyMask(s.k) ?? 0)}<b>${esc(s.k)}</b><small>${pct(100 * s.rate)}</small></span>`).join('')}</div>` : ''}`);
+    }
+
+    // Free typing, once used
+    let freeHTML = '';
+    const freeSigns = sum(days, (r) => r.freeSigns);
+    if (freeSigns) {
+      const unknown = sum(days, (r) => r.freeErrors), fTime = sum(days, (r) => r.freeTime), fTimed = sum(days, (r) => r.freeTimed);
+      freeHTML = sec('Mode libre', '',
+        `<div class="kpis">${kpi('Signes écrits', num(freeSigns))}${kpi('Effacés', num(sum(days, (r) => r.freeErased)))}
+          ${kpi('Signes inconnus', num(unknown), `${pct((100 * unknown) / freeSigns)} des signes`)}
+          ${kpi('Vitesse', fTimed >= 10 && fTime ? `${num((60000 * fTimed) / fTime)}${NBSP}/${NBSP}min` : '—', 'signes par minute')}
+          ${kpi('Temps', dur(sum(days, (r) => r.freeMs)))}</div>`);
+    }
+
+    pgBody.innerHTML = noteHTML + kpis
+      + sec('Temps d’entraînement par jour', 'En minutes, sur les 4 dernières semaines.', '<p class="readout" id="rd-day"></p><div class="chart" data-chart="day" tabindex="0"></div>')
+      + weeksHTML + grid + confHTML + readHTML + freeHTML + lessonsHTML;
+    drawCharts();
+    showSign(pg.sel.sign);
+  }
+
+  function showSign(k) {
+    const box = $('#sg-detail');
+    if (!box) return;
+    $$('.sg').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
+    if (!k) { box.textContent = 'Touche un signe pour voir ses chiffres.'; return; }
+    const [n, miss, time, timed] = pg.agg[k] || [0, 0, 0, 0];
+    const m = keyMask(k);
+    let html = `<b>${k === 'maj' || k === 'num' ? upFirst(signName(k)) : `« ${esc(k)} »`}</b>, point${m & (m - 1) ? 's' : ''} ${dotList(m)}. `;
+    if (!n) html += 'Pas encore tapé ces 4 dernières semaines.';
+    else {
+      html += `${num(n)} essai${n > 1 ? 's' : ''} au premier coup, ${num(miss)} raté${miss > 1 ? 's' : ''} (${pct((100 * miss) / n)}).`;
+      if (timed) html += ` ${secs(time / timed)} en moyenne quand il est juste.`;
+    }
+    const instead = pg.conf.filter((p) => p.k === k).slice(0, 4);
+    if (instead.length) html += ` À sa place, tu as tapé : ${instead.map((p) => `<b>${esc(p.typed === '?' ? `points ${dotList(p.got)}` : p.typed)}</b> (${times(p.n)})`).join(', ')}.`;
+    box.innerHTML = html;
+  }
+
+  // Charts: inline SVG at the container's width, one series each, the selected mark in ink
+  function drawCharts() { for (const c of $$('.chart')) drawChart(c.dataset.chart); }
+  function drawChart(name) {
+    const box = $(`.chart[data-chart="${name}"]`), rd = $(`#rd-${name}`);
+    if (!box || !pg?.charts) return;
+    const W = Math.max(240, Math.floor(box.clientWidth));
+    const { day: list, weeks, today } = pg.charts;
+    if (name === 'day') {
+      const sel = pg.sel.day, d = list[sel], r = pg.days.find((x) => x.day === d.day);
+      const when = upFirst(fmtDay(d.day, { weekday: 'short', day: 'numeric', month: 'short' })) + (d.day === today ? ' (aujourd’hui)' : '');
+      const bits = [];
+      if (practised(r)) {
+        bits.push(`<b>${dur(r.ms)}</b>`);
+        if (r.signs + r.freeSigns) bits.push(`${num(r.signs + r.freeSigns)} signes`);
+        if (r.signs) bits.push(`${pct((100 * (r.signs - r.errors)) / r.signs)} justes`);
+        if (r.readSigns) bits.push(`${num(r.readSigns)} lus`);
+      } else bits.push('pas d’entraînement');
+      rd.innerHTML = `${when} : ${bits.join(' · ')}`;
+      box.innerHTML = barSVG(list, sel, W) + `<table class="sr"><caption>Minutes d’entraînement par jour</caption>${list.map((x) => `<tr><th>${fmtDay(x.day, { weekday: 'long', day: 'numeric', month: 'long' })}</th><td>${dur(x.ms)}</td></tr>`).join('')}</table>`;
+    } else {
+      const acc = name === 'acc', key = acc ? 'acc' : 'spm', sel = pg.sel[name], w = weeks[sel];
+      const vals = weeks.map((x) => x[key]).filter((v) => v != null);
+      const fmt = acc ? pct : (v) => num(v);
+      let lo = 0, hi, step;
+      if (!vals.length) { lo = 0; hi = acc ? 100 : 10; step = hi / 2; }
+      else if (acc) { step = niceStep(Math.max(10, 100 - Math.min(...vals)) / 2); lo = Math.max(0, Math.floor((Math.min(...vals) - 1) / step) * step); hi = 100; }
+      else { step = niceStep(Math.max(...vals) / 2); hi = Math.max(step, Math.ceil(Math.max(...vals) / step) * step); }
+      rd.innerHTML = `Semaine du ${shortDay(w.start)} : ${w[key] == null ? 'pas assez de signes' : acc ? `<b>${pct(w.acc)}</b> justes` : `<b>${num(w.spm)}</b> signes par minute`}`;
+      box.innerHTML = lineSVG(weeks.map((x) => ({ label: shortDay(x.start), v: x[key] })), sel, W, { lo, hi, step, fmt, unit: acc })
+        + `<table class="sr"><caption>${acc ? 'Précision' : 'Signes par minute'}, par semaine</caption>${weeks.map((x) => `<tr><th>Semaine du ${shortDay(x.start)}</th><td>${x[key] == null ? '—' : fmt(x[key])}</td></tr>`).join('')}</table>`;
+    }
+  }
+
+  function barSVG(list, sel, W) {
+    const H = 112, L = 26, R = 6, T = 8, B = 18, pw = W - L - R, ph = H - T - B, base = T + ph;
+    const n = list.length, slot = pw / n, bw = Math.max(3, Math.min(16, slot - 3));
+    const mins = list.map((d) => d.ms / 60000), max = Math.max(...mins);
+    const step = niceStep(Math.max(6, max) / 3), top = Math.max(step, Math.ceil(max / step) * step);
+    const y = (v) => f1(base - (v / top) * ph);
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">`;
+    for (let v = step; v <= top + 1e-6; v += step) s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end">${num(v)}</text>`;
+    s += `<text x="${L - 6}" y="${base + 3.5}" text-anchor="end">0</text>`;
+    const cx = (i) => L + slot * (i + 0.5);
+    s += `<line class="cross" x1="${f1(cx(sel))}" x2="${f1(cx(sel))}" y1="${T}" y2="${base}"/>`;
+    let lastLabel = -Infinity;
+    list.forEach((d, i) => {
+      if (mins[i] > 0) {
+        const h = Math.max(2, (mins[i] / top) * ph), x = cx(i) - bw / 2, r = Math.min(4, bw / 2, h);
+        s += `<path class="bar${i === sel ? ' sel' : ''}" d="M${f1(x)},${base}V${f1(base - h + r)}A${r},${r} 0 0 1 ${f1(x + r)},${f1(base - h)}H${f1(x + bw - r)}A${r},${r} 0 0 1 ${f1(x + bw)},${f1(base - h + r)}V${base}Z"/>`;
+      }
+      // Mondays carry the date
+      if (dateOf(d.day).getDay() === 1 && cx(i) - lastLabel >= 46) {
+        const anchor = cx(i) + 20 > W ? 'end' : cx(i) - 20 < 0 ? 'start' : 'middle';
+        s += `<text x="${f1(anchor === 'end' ? W : anchor === 'start' ? 0 : cx(i))}" y="${H - 3}" text-anchor="${anchor}">${shortDay(d.day)}</text>`;
+        lastLabel = cx(i);
+      }
+    });
+    s += `<line class="base" x1="${L}" x2="${W - R}" y1="${base + 0.5}" y2="${base + 0.5}"/>`;
+    list.forEach((d, i) => { s += `<rect class="hit" data-i="${i}" x="${f1(L + slot * i)}" y="0" width="${f1(slot)}" height="${H}"/>`; });
+    return s + '</svg>';
+  }
+
+  function lineSVG(pts, sel, W, { lo, hi, step, fmt, unit }) {
+    const H = 104, L = unit ? 36 : 26, R = 42, T = 10, B = 18, pw = W - L - R, ph = H - T - B, base = T + ph, n = pts.length;
+    const x = (i) => f1(L + (n === 1 ? pw / 2 : (i * pw) / (n - 1)));
+    const y = (v) => f1(base - ((v - lo) / (hi - lo)) * ph);
+    const gap = n > 1 ? pw / (n - 1) : pw;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">`;
+    for (let v = lo; v <= hi + 1e-6; v += step) {
+      s += `<line class="${v === lo ? 'base' : 'grid'}" x1="${L}" x2="${W - R}" y1="${y(v) + (v === lo ? 0.5 : 0)}" y2="${y(v) + (v === lo ? 0.5 : 0)}"/><text x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end">${fmt(v)}</text>`;
+    }
+    s += `<line class="cross" x1="${x(sel)}" x2="${x(sel)}" y1="${T}" y2="${base}"/>`;
+    let d = '';
+    pts.forEach((p, i) => { if (p.v != null) d += `${i && pts[i - 1].v != null ? 'L' : 'M'}${x(i)},${y(p.v)}`; });
+    if (d) s += `<path class="line" d="${d}"/>`;
+    pts.forEach((p, i) => { if (p.v != null) s += `<circle class="dot${i === sel ? ' sel' : ''}" cx="${x(i)}" cy="${y(p.v)}" r="${i === sel ? 5 : 4}"/>`; });
+    const last = pts.findLastIndex((p) => p.v != null);
+    if (last >= 0) s += `<text class="end" x="${x(last) + 9}" y="${y(pts[last].v) + 4}">${fmt(pts[last].v)}</text>`;
+    // Week labels, from the latest back, as many as fit
+    const every = Math.max(1, Math.ceil(52 / gap));
+    for (let i = n - 1; i >= 0; i -= every) {
+      const anchor = n > 1 && i === 0 && x(0) - 20 < 0 ? 'start' : 'middle';
+      s += `<text x="${x(i)}" y="${H - 3}" text-anchor="${anchor}">${pts[i].label}</text>`;
+    }
+    pts.forEach((p, i) => { s += `<rect class="hit" data-i="${i}" x="${f1(x(i) - gap / 2)}" y="0" width="${f1(gap)}" height="${H}"/>`; });
+    return s + '</svg>';
+  }
+
+  // Tap or hover a day or a week to read it; arrows move along when the chart has focus
+  function pickMark(e) {
+    const hit = e.target.closest?.('.hit');
+    if (!hit || !pg) return;
+    const name = hit.closest('.chart').dataset.chart, i = +hit.dataset.i;
+    if (pg.sel[name] !== i) { pg.sel[name] = i; drawChart(name); }
+  }
+  pgBody.addEventListener('pointerdown', pickMark);
+  pgBody.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') pickMark(e); });
+  pgBody.addEventListener('keydown', (e) => {
+    const chart = e.target.closest?.('.chart');
+    if (!chart || !pg || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    const name = chart.dataset.chart, n = name === 'day' ? pg.charts.day.length : pg.charts.weeks.length;
+    pg.sel[name] = Math.min(n - 1, Math.max(0, pg.sel[name] + (e.key === 'ArrowLeft' ? -1 : 1)));
+    drawChart(name);
+  });
+  pgBody.addEventListener('click', (e) => {
+    const tile = e.target.closest('.sg');
+    if (!tile || !pg) return;
+    pg.sel.sign = pg.sel.sign === tile.dataset.k ? null : tile.dataset.k;
+    showSign(pg.sel.sign);
+  });
+  let pgResize = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(pgResize);
+    pgResize = setTimeout(() => { if (!el.progress.hidden && pg?.charts) drawCharts(); }, 150);
+  });
+  $('#picker-progress').addEventListener('click', openProgress);
+  $('#progress-back').addEventListener('click', closeProgress);
 
   /* ---------- Text size ---------- */
   const sizePop = $('#size-pop'), sizeBtn = $('#btn-size');
