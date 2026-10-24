@@ -39,13 +39,15 @@
   --hint-ink: #163f66;
   --f-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
   --f-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", monospace;
-  --cw: 20px;    /* free-typing cell width */
+  --cw: 22px;    /* free-typing cell width */
   --ucw: 16px;   /* exercise cell width */
-  --uch: 24px;   /* exercise letter size */
+  --uch: 26px;   /* exercise letter size */
+  --bs: 1;       /* braille size, set by the Aa panel */
+  --fs: 1;       /* French size, set by the Aa panel */
   color-scheme: light;
 }
 @media (orientation: landscape) and (max-height: 440px) {
-  :root { --cw: 17px; --ucw: 13px; --uch: 21px; }
+  :root { --cw: 19px; --ucw: 14px; --uch: 22px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -86,6 +88,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   min-height: 0;
   display: flex;
   flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
   background: var(--paper);
 }
 .bar { display: flex; align-items: center; gap: 4px; padding-block: 6px 2px; }
@@ -118,21 +121,28 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   color: var(--hint); padding: 5px 12px; font-weight: 600; font-size: 14px;
 }
 .pill[aria-pressed="true"] { background: var(--hint); color: #fff; }
+.pill svg { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 420px) {
+  .bar { gap: 2px; }
+  .pill { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+  .pill span { display: none; }
+  .pill svg { display: block; }
+}
 
 .view { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-block: 6px 10px; }
 
 /* Free typing: braille on top, French underneath */
-.cells { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: 12px; }
-.w { display: flex; gap: 4px; }
-.cell { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: var(--cw); }
-.cell .bc { width: var(--cw); height: calc(var(--cw) * 1.5); }
-.cell b { font: 600 15px/16px var(--f-body); min-height: 16px; }
-.cell.ind b { font: 600 9px/16px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.cells { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: calc(12px * var(--fs)); }
+.w { display: flex; flex-wrap: wrap; max-width: 100%; gap: calc(4px * var(--bs)); }
+.cell { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: calc(var(--cw) * var(--bs)); }
+.cell .bc { width: calc(var(--cw) * var(--bs)); height: calc(var(--cw) * 1.5 * var(--bs)); }
+.cell b { font-family: var(--f-body); font-weight: 600; font-size: calc(17px * var(--fs)); line-height: 1.1; min-height: calc(17px * 1.1 * var(--fs)); }
+.cell.ind b { font-family: var(--f-mono); font-size: calc(10px * var(--fs)); line-height: calc(17px * 1.1 * var(--fs)); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
 .cell.unk b { color: var(--err); }
-.cell.space { width: calc(var(--cw) * .9); min-width: 0; }
+.cell.space { width: calc(var(--cw) * .9 * max(var(--bs), var(--fs))); min-width: 0; }
 .nl { flex-basis: 100%; height: 0; }
 .caret {
-  width: 2px; height: calc(var(--cw) * 1.5); margin-left: 3px;
+  width: 2px; height: calc(var(--cw) * 1.5 * var(--bs)); margin-left: 3px;
   background: var(--hint); border-radius: 1px;
   animation: blink 1.1s steps(1) infinite;
 }
@@ -148,11 +158,11 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .u {
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 3px 2px 5px; border-radius: 7px; min-width: calc(var(--uch) * .5);
+  padding: 3px 2px 5px; border-radius: 7px; min-width: calc(var(--uch) * .5 * var(--fs));
 }
-.u .ch { font: 600 var(--uch)/1 var(--f-body); min-height: var(--uch); }
-.u .cs { display: flex; gap: 2px; }
-.u .bc { width: var(--ucw); height: calc(var(--ucw) * 1.5); }
+.u .ch { font-family: var(--f-body); font-weight: 600; font-size: calc(var(--uch) * var(--fs)); line-height: 1; min-height: calc(var(--uch) * var(--fs)); }
+.u .cs { display: flex; gap: calc(2px * var(--bs)); }
+.u .bc { width: calc(var(--ucw) * var(--bs)); height: calc(var(--ucw) * 1.5 * var(--bs)); }
 .u.done .ch { color: var(--ok); }
 .u.done.missed .ch { color: var(--err); }
 .u.cur { background: #fff6d6; }
@@ -164,8 +174,8 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .u.cur.err .ch { color: var(--err); }
 .u.cur.err::after { background: var(--err); }
 .spk {
-  display: inline-block; width: calc(var(--uch) * .55); height: calc(var(--uch) * .3);
-  margin-top: calc(var(--uch) * .55);
+  display: inline-block; width: calc(var(--uch) * .55 * var(--fs)); height: calc(var(--uch) * .3 * var(--fs));
+  margin-top: calc(var(--uch) * .55 * var(--fs));
   border: 2px solid var(--ink-soft); border-top: 0; border-radius: 0 0 3px 3px; opacity: .6;
 }
 .u.done .spk { border-color: var(--ok); }
@@ -292,6 +302,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   .brand { display: none; }
   .preview .bc { width: 26px; }
   .preview-label { font-size: 20px; }
+  .preview-label.small { white-space: normal; text-align: center; font-size: 9px; line-height: 1.15; letter-spacing: .04em; }
   .meta { display: none; }
   .ex-meta-inline { display: block; }
   .tabs button { padding: 6px 11px; }
@@ -356,6 +367,22 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .panel .keys { margin: 0; font-size: 13px; color: var(--ink-soft); }
 .panel kbd { font: 600 12px var(--f-mono); padding: 1px 5px; border-radius: 4px; background: var(--paper-2); color: var(--ink); }
 
+.pop {
+  position: absolute; z-index: 25;
+  top: calc(env(safe-area-inset-top, 0px) + 46px);
+  right: max(12px, env(safe-area-inset-right, 0px));
+  width: min(290px, calc(100% - 24px));
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 14px 14px; border-radius: 14px;
+  background: var(--card); border: 1px solid var(--rule);
+  box-shadow: 0 12px 32px rgba(20, 24, 28, .28);
+}
+.pop .slider { display: flex; align-items: baseline; justify-content: space-between; font-size: 14px; font-weight: 600; }
+.pop output { font: 600 13px var(--f-mono); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.pop input[type="range"] { width: 100%; height: 32px; margin: 0 0 6px; accent-color: var(--ink); }
+.pop .btn { align-self: flex-start; }
+.ibtn[aria-expanded="true"] { background: var(--ink); color: var(--paper); }
+
 .toast {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 50;
   translate: -50% 0; padding: 8px 14px; border-radius: 999px;
@@ -388,7 +415,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
         <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
       </button>
 
-      <button class="pill" id="btn-hint" aria-pressed="false" hidden>Indice</button>
+      <button class="pill" id="btn-hint" aria-pressed="false" aria-label="Indice" title="Indice" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>Indice</span>
+      </button>
       <button class="ibtn" id="btn-restart" aria-label="Recommencer l’exercice" title="Recommencer" hidden>
         <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>
       </button>
@@ -398,6 +427,9 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 
       <button class="ibtn" id="btn-settings" aria-label="Réglages" title="Réglages">
         <svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      </button>
+      <button class="ibtn" id="btn-size" aria-label="Taille du texte" title="Taille du texte" aria-expanded="false" aria-controls="size-pop">
+        <svg viewBox="0 0 24 24"><path d="M2.5 19L8 5l5.5 14M4.6 14h6.8M14.5 19l3.5-9 3.5 9M15.7 16h4.6"/></svg>
       </button>
     </header>
 
@@ -480,6 +512,14 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       <p class="keys">Sur téléphone, tiens-le à l’horizontale. Sur iPhone, « Partager › Sur l’écran d’accueil » l’ouvre en plein écran.</p>
       <button class="btn primary" id="settings-close">Fermer</button>
     </div>
+  </div>
+
+  <div class="pop" id="size-pop" role="dialog" aria-label="Taille du texte" hidden>
+    <label class="slider" for="size-braille"><span>Braille</span><output id="size-braille-val" for="size-braille"></output></label>
+    <input type="range" id="size-braille" min="70" max="300" step="10">
+    <label class="slider" for="size-fr"><span>Français</span><output id="size-fr-val" for="size-fr"></output></label>
+    <input type="range" id="size-fr" min="70" max="300" step="10">
+    <button class="btn small" id="size-reset">Taille par défaut</button>
   </div>
 
   <div class="toast" id="toast" hidden></div>
@@ -610,7 +650,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     get(k, d) { try { const v = localStorage.getItem('sixpoints.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem('sixpoints.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
-  const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, sound: true }, store.get('settings', {}));
+  const settings = Object.assign({ stopOnError: true, showBraille: false, preview: true, sound: true, brailleSize: 100, frSize: 100 }, store.get('settings', {}));
   let freeTokens = store.get('free', null) ?? transcribe('Bonjour').units.flatMap((u) => u.cells);
   let mode = 'free';
   let ex = null;
@@ -905,7 +945,17 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     }
     html += wrap(word + '<span class="caret"></span>');
     el.freeView.innerHTML = `<div class="cells">${html}</div>`;
-    el.freeView.scrollTop = el.freeView.scrollHeight;
+    scrollToCursor();
+  }
+
+  // Keep the current letter (exercise) or the end of the text (free typing) in view
+  function scrollToCursor() {
+    if (mode === 'free') { el.freeView.scrollTop = el.freeView.scrollHeight; return; }
+    const cur = el.exSheet.querySelector('.u.cur');
+    if (!cur) return;
+    const top = cur.offsetTop, bottom = top + cur.offsetHeight, s = el.exSheet;
+    if (top < s.scrollTop) s.scrollTop = top - 4;
+    else if (bottom > s.scrollTop + s.clientHeight) s.scrollTop = bottom - s.clientHeight + 4;
   }
 
   function unitLabel(ch) { return ch === ' ' ? 'Espace' : `« ${esc(ch)} »`; }
@@ -930,13 +980,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     });
     html += `<span class="w">${word}</span>`;
     el.exSheet.innerHTML = `<div class="units">${html}</div>`;
-
-    const cur = el.exSheet.querySelector('.u.cur');
-    if (cur) {
-      const top = cur.offsetTop, bottom = top + cur.offsetHeight, s = el.exSheet;
-      if (top < s.scrollTop) s.scrollTop = top - 4;
-      else if (bottom > s.scrollTop + s.clientHeight) s.scrollTop = bottom - s.clientHeight + 4;
-    }
+    scrollToCursor();
 
     const metaHTML = `<b>${esc(ex.title)}</b> · ${ex.li === 'custom' ? '' : `exercice ${ex.i + 1}/${ex.total} · `}${Math.min(ex.u, ex.units.length)}/${ex.units.length} · ${ex.errors} erreur${ex.errors > 1 ? 's' : ''}`;
     el.meta.innerHTML = metaHTML;
@@ -1026,7 +1070,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
     el.picker.hidden = false;
     releaseAll();
   }
-  function closeOverlays() { el.picker.hidden = true; el.settings.hidden = true; }
+  function closeOverlays() { el.picker.hidden = true; el.settings.hidden = true; toggleSizePop(false); }
 
   $('#lesson-list').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -1070,9 +1114,43 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
       if (mode === 'ex' && ex) renderEx();
     });
   }
-  $('#btn-settings').addEventListener('click', () => { releaseAll(); el.settings.hidden = false; });
+  $('#btn-settings').addEventListener('click', () => { releaseAll(); toggleSizePop(false); el.settings.hidden = false; });
   $('#settings-close').addEventListener('click', () => { el.settings.hidden = true; });
   el.settings.addEventListener('click', (e) => { if (e.target === el.settings) el.settings.hidden = true; });
+
+  /* ---------- Text size ---------- */
+  const sizePop = $('#size-pop'), sizeBtn = $('#btn-size');
+  const sizes = { brailleSize: ['#size-braille', '--bs'], frSize: ['#size-fr', '--fs'] };
+  function applySizes() {
+    for (const [key, [sel, prop]] of Object.entries(sizes)) {
+      document.documentElement.style.setProperty(prop, settings[key] / 100);
+      $(sel).value = settings[key];
+      $(sel + '-val').textContent = settings[key] + ' %';
+    }
+  }
+  function toggleSizePop(open = sizePop.hidden) {
+    sizePop.hidden = !open;
+    sizeBtn.setAttribute('aria-expanded', String(open));
+  }
+  for (const [key, [sel]] of Object.entries(sizes)) {
+    $(sel).addEventListener('input', (e) => {
+      settings[key] = +e.target.value;
+      store.set('settings', settings);
+      applySizes();
+      scrollToCursor();
+    });
+  }
+  $('#size-reset').addEventListener('click', () => {
+    settings.brailleSize = settings.frSize = 100;
+    store.set('settings', settings);
+    applySizes();
+    scrollToCursor();
+  });
+  sizeBtn.addEventListener('click', () => toggleSizePop());
+  // Tapping the paper closes the panel; the keys stay usable to try the new size
+  document.addEventListener('pointerdown', (e) => {
+    if (!sizePop.hidden && !e.target.closest('#size-pop, #btn-size, #machine')) toggleSizePop(false);
+  });
 
   /* ---------- Bar ---------- */
   $('#tab-free').addEventListener('click', () => { closeOverlays(); setMode('free'); });
@@ -1112,6 +1190,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   });
   function resetClear() { clearBtn.classList.remove('confirm'); clearBtn.innerHTML = clearIcon; }
 
+  applySizes();
   setMode('free');
 })();
 </script>
