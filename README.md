@@ -2,7 +2,7 @@
 
 A Perkins brailler trainer for French braille (non abrégé), made for a phone held sideways.
 
-**Use it:** https://gnutix.github.io/six-points/
+**Use it:** https://gnutix.github.io/perkins/
 On iPhone, open it in Safari, then *Partager › Sur l'écran d'accueil* to get it full screen.
 
 ## Modes
