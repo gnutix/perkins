@@ -1161,8 +1161,8 @@ div.toggle { cursor: default; }
       if (!ev.first || !k) return;
       const s = (by[k] ||= [0, 0, 0, 0]);
       s[0]++;
-      if (!ev.ok) s[1]++;
-      else if (ev.dt != null && !ev.hint) { s[2] += Math.min(ev.dt, 10000); s[3]++; }
+      if (!ev.ok || ev.hint) s[1]++; // a sign typed after a hint was not known, as in « Points faibles »
+      else if (ev.dt != null) { s[2] += Math.min(ev.dt, 10000); s[3]++; }
     }
     // The day row as a function of the event alone, so an event replayed from the outbox counts the same
     function summarise(row, ev) {
@@ -2243,7 +2243,7 @@ div.toggle { cursor: default; }
       const weak = Object.entries(rby).filter(([, a]) => a[0] >= 5 && a[1] > 0)
         .map(([k, a]) => ({ k, rate: a[1] / a[0] })).sort((a, b) => b.rate - a.rate).slice(0, 8);
       readHTML = sec('Lecture', '',
-        `<div class="kpis">${kpi('Signes lus', num(readSigns))}${kpi('Justes', pct((100 * (readSigns - readErrors)) / readSigns))}
+        `<div class="kpis">${kpi('Signes lus', num(readSigns - readErrors))}${kpi('Justes', pct((100 * (readSigns - readErrors)) / readSigns))}
           ${kpi('Par signe', rTimed ? secs(rTime / rTimed) : '—', 'quand il est juste')}${kpi('Temps', dur(sum(days, (r) => r.readMs)))}</div>
         ${weak.length ? `<p class="sub" style="margin-top:10px">Les plus ratés en lecture</p><div class="wsigns">${weak.map((s) => `<span class="wk">${cellSVG(keyMask(s.k) ?? 0)}<b>${esc(s.k)}</b><small>${pct(100 * s.rate)}</small></span>`).join('')}</div>` : ''}`);
     }
@@ -2300,7 +2300,7 @@ div.toggle { cursor: default; }
         bits.push(`<b>${dur(r.ms)}</b>`);
         if (r.signs + r.freeSigns) bits.push(`${num(r.signs + r.freeSigns)} signes`);
         if (r.signs) bits.push(`${pct((100 * (r.signs - r.errors)) / r.signs)} justes`);
-        if (r.readSigns) bits.push(`${num(r.readSigns)} lus`);
+        if (r.readSigns) bits.push(`${num(r.readSigns - r.readErrors)} lus`);
       } else bits.push('pas d’entraînement');
       rd.innerHTML = `${when} : ${bits.join(' · ')}`;
       box.innerHTML = barSVG(list, sel, W) + `<table class="sr"><caption>Minutes d’entraînement par jour</caption>${list.map((x) => `<tr><th>${fmtDay(x.day, { weekday: 'long', day: 'numeric', month: 'long' })}</th><td>${dur(x.ms)}</td></tr>`).join('')}</table>`;
@@ -2585,8 +2585,11 @@ div.toggle { cursor: default; }
   function readChar(c) {
     const now = performance.now(), exp = rd.units[rd.u].ch;
     rd.t0 ??= now;
+    // A capital read as its small letter missed the capital sign, a digit read as its letter the number sign
+    const k = /\p{Lu}/u.test(exp) && c === exp.toLowerCase() ? 'maj'
+      : DIGIT2MASK[exp] !== undefined && MASK2CHAR[DIGIT2MASK[exp]] === c ? 'num' : undefined;
     journal.read({
-      round: rd.key, ch: exp, got: c, ok: c === exp, first: !rd.missed.has(rd.u), hint: rd.revealed.has(rd.u),
+      round: rd.key, ch: exp, k, got: c, ok: c === exp, first: !rd.missed.has(rd.u), hint: rd.revealed.has(rd.u),
       dt: rd.lastAt != null && now - rd.lastAt <= 30000 ? Math.round(now - rd.lastAt) : null,
     });
     rd.lastAt = now;
