@@ -749,6 +749,72 @@ div.toggle { cursor: default; }
   let mode = 'free';
   let ex = null;
 
+  /* ---------- Practice journal ---------- */
+  // Every sign typed in practice is kept in IndexedDB ('events'), with a running summary per day
+  // ('days') for the progress page. It all stays on the phone; a failed write never stops practice.
+  const journal = (() => {
+    let dbp = null, persisted = false;
+    const open = () => (dbp ||= new Promise((resolve, reject) => {
+      const req = indexedDB.open('sixpoints', 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore('events', { autoIncrement: true }).createIndex('t', 't');
+        req.result.createObjectStore('days', { keyPath: 'day' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    }).catch(() => null));
+    const dayOf = (t) => {
+      const d = new Date(t);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    async function write(ev, summarise) {
+      try {
+        const db = await open();
+        if (!db) return;
+        if (!persisted) { persisted = true; navigator.storage?.persist?.().catch(() => {}); }
+        const tx = db.transaction(['events', 'days'], 'readwrite');
+        tx.objectStore('events').add(ev);
+        const days = tx.objectStore('days'), req = days.get(dayOf(ev.t));
+        req.onsuccess = () => {
+          const row = req.result || { day: dayOf(ev.t), ms: 0, signs: 0, errors: 0, hints: 0, done: 0, bySign: {} };
+          summarise(row);
+          days.put(row);
+        };
+      } catch { /* storage refused or full */ }
+    }
+    const readAll = async (store, range) => {
+      try {
+        const db = await open();
+        if (!db) return [];
+        return await new Promise((resolve) => {
+          const os = db.transaction(store).objectStore(store);
+          const req = range ? os.index('t').getAll(range) : os.getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve([]);
+        });
+      } catch { return []; }
+    };
+    return {
+      // ev: what was expected and typed, plus timing; counted per sign on first tries only
+      sign(ev) {
+        write({ v: 1, t: Date.now(), type: 'sign', ...ev }, (row) => {
+          row.signs++;
+          if (!ev.ok) row.errors++;
+          if (ev.ok && ev.hint) row.hints++;
+          if (ev.dt != null) row.ms += Math.min(ev.dt, 30000);
+          if (!ev.first || !ev.k) return;
+          const s = (row.bySign[ev.k] ||= [0, 0, 0, 0]); // tries, misses, time sum (ms), timed tries
+          s[0]++;
+          if (!ev.ok) s[1]++;
+          else if (ev.dt != null && !ev.hint) { s[2] += Math.min(ev.dt, 10000); s[3]++; }
+        });
+      },
+      done(ev) { write({ v: 1, t: Date.now(), type: 'done', ...ev }, (row) => { row.done++; }); },
+      days: () => readAll('days'),
+      events: (since = 0) => readAll('events', IDBKeyRange.lowerBound(since)),
+    };
+  })();
+
   /* ---------- DOM ---------- */
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
@@ -809,6 +875,8 @@ div.toggle { cursor: default; }
   let releaseSnap = null, releaseAt = 0;
   const heldDots = () => [...sources.values()].reduce((m, k) => (k.dataset.dot ? m | (1 << (k.dataset.dot - 1)) : m), 0);
   let lastShown = null; // { m, label }
+  // For the journal: each key of the chord as [dot (0 = space bar), down, up]
+  let chordKeys = [], lastChord = null;
 
   const keyFor = (k) => (/^\d$/.test(k) ? $(`.key[data-dot="${k}"]`) : $(`.key[data-fn="${k}"]`));
   const refreshKey = (key) => key.classList.toggle('down', [...sources.values()].includes(key));
@@ -822,6 +890,7 @@ div.toggle { cursor: default; }
     if (fn === 'space' && mode === 'ex' && ex?.locked) { nudgeBlocked(); return; }
     sources.set(src, key);
     refreshKey(key);
+    if (dot || fn === 'space') chordKeys.push([dot || 0, performance.now(), null]);
     if (dot) { chordDots |= 1 << (dot - 1); releaseSnap = null; }
     else if (fn === 'space') chordSpace = true;
     else if (fn === 'back') onBack();
@@ -834,6 +903,10 @@ div.toggle { cursor: default; }
     if (!key) return;
     sources.delete(src);
     refreshKey(key);
+    if (key.dataset.dot || key.dataset.fn === 'space') {
+      const rec = chordKeys.findLast((r) => r[0] === (+key.dataset.dot || 0) && r[2] === null);
+      if (rec) rec[2] = performance.now();
+    }
     // Like on a real Perkins, a dot is embossed once its key goes down, unless the setting says otherwise
     if (settings.liftToFix && key.dataset.dot) {
       const now = performance.now();
@@ -844,7 +917,9 @@ div.toggle { cursor: default; }
     const chordHeld = [...sources.values()].some((k) => k.dataset.dot || k.dataset.fn === 'space');
     if (!chordHeld && (chordDots || chordSpace || releaseSnap)) {
       const m = (settings.liftToFix ? releaseSnap : chordDots) || SPACE;
-      chordDots = 0; chordSpace = false; releaseSnap = null;
+      const t0 = chordKeys[0]?.[1] ?? 0, pressed = chordKeys.reduce((u, [d]) => (d ? u | (1 << (d - 1)) : u), 0);
+      lastChord = { keys: chordKeys.map(([d, down, up]) => [d, Math.round(down - t0), Math.round((up ?? down) - t0)]), lift: (pressed & ~m) !== 0 };
+      chordDots = 0; chordSpace = false; releaseSnap = null; chordKeys = [];
       onCell(m);
     } else {
       renderPreview();
@@ -853,7 +928,7 @@ div.toggle { cursor: default; }
 
   function releaseAll() {
     sources.clear();
-    chordDots = 0; chordSpace = false; releaseSnap = null;
+    chordDots = 0; chordSpace = false; releaseSnap = null; chordKeys = [];
     $$('.key.down').forEach((k) => k.classList.remove('down'));
     renderPreview();
   }
@@ -955,7 +1030,7 @@ div.toggle { cursor: default; }
     ex = {
       li, i, units, title: lesson.title, total: lesson.items.length, key: lesson.id + ':' + i,
       u: 0, c: 0, errors: 0, hints: 0, hint: false, hinted: false, err: null, locked: false, done: false,
-      t0: null, t1: null, missed: new Set(), slip: false, review: new Set(),
+      t0: null, t1: null, lastAt: null, missed: new Set(), slip: false, review: new Set(),
     };
     lastShown = null;
     closeOverlays();
@@ -977,8 +1052,14 @@ div.toggle { cursor: default; }
 
   function exInput(m) {
     if (ex.locked || ex.done) return;
-    ex.t0 ??= performance.now();
+    const now = performance.now();
+    ex.t0 ??= now;
     const unit = ex.units[ex.u];
+    journal.sign({
+      mode: 'ex', ex: ex.key, ch: unit.ch, k: signKey(), exp: unit.cells[ex.c], got: m, ok: m === unit.cells[ex.c],
+      first: !ex.slip, hint: ex.hint, dt: ex.lastAt == null ? null : Math.round(now - ex.lastAt), ...lastChord,
+    });
+    ex.lastAt = now;
     if (m === unit.cells[ex.c]) {
       if (!ex.slip) noteSign(ex.hint ? '#' : '');
       ex.slip = false;
@@ -1025,6 +1106,7 @@ div.toggle { cursor: default; }
     const secs = Math.round(((ex.t1 - (ex.t0 ?? ex.t1)) / 1000));
     const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
     const review = [...ex.review];
+    journal.done({ mode: 'ex', ex: ex.key, signs: cells, errors: ex.errors, hints: ex.hints, ms: Math.round(ex.t1 - (ex.t0 ?? ex.t1)), accuracy });
     $('#done-title').textContent = ex.errors === 0 ? 'Parfait, aucune erreur' : accuracy >= 90 ? 'Bravo, c’est réussi' : 'Terminé';
     $('#done-stats').innerHTML = [
       ['Précision', accuracy + ' %'], ['Erreurs', ex.errors], ['Indices', ex.hints], ['Temps', time],
