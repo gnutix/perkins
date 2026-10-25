@@ -26,3 +26,15 @@ Everything is in `index.html` (no build step). Serve the folder and open it:
 ```bash
 python3 -m http.server 8765
 ```
+
+## Tests
+
+End-to-end tests with Playwright, in Chromium and WebKit, on the phone's screen (667×375, and 375×553 where it matters), plus a few data checks in Node. Node, Python, the browsers and the app's fonts come from the flake's devshell, so nothing is installed globally:
+
+```bash
+nix develop -c npm ci                    # once, and after a change to package-lock.json
+nix develop -c npx playwright test       # the whole suite, 4 workers at most
+nix develop -c npx playwright test tests/reading.spec.ts --project=webkit   # one file, one browser
+```
+
+With direnv, `direnv allow` once and drop the `nix develop -c`. The `@playwright/test` version in `package.json` must match nixpkgs' `playwright-driver` (the config says so when they differ). A failed run leaves a report: `npx playwright show-report`.
