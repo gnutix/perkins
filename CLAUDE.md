@@ -54,7 +54,9 @@ what a session needs to change them safely.
   schema, bump the version and migrate in `onupgradeneeded` from `oldVersion`. Never delete or recreate a
   store. Old records must stay readable (events carry `v`; day rows are filled in on read).
 - v3 recounted the days holding « phantom » é misses, typed before the six-finger fix (`phantomE`): they
-  stay in `events`, only their time counts, and `summarise` keeps leaving them out.
+  stay in `events`, only their time counts, and `summarise` keeps leaving them out. Once they are out of
+  « Progrès »' four weeks (after 2026-11-24), `phantomE` can leave `summarise` and `confusionsFrom`; keep
+  the upgrade step.
 - Each journal write goes to the localStorage outbox first, then to IndexedDB. A failed write must never
   interrupt practice. Nothing leaves the phone, and there is no export (her choice).
 - Removing the home-screen icon deletes all of it: never suggest it as a fix.
