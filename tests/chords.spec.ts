@@ -119,3 +119,25 @@ for (const liftToFix of [false, true]) {
     expect(await freeText(page)).toBe('ép');
   });
 }
+
+test('?debug lists the raw touch and pointer events, to see what the phone sends', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'multi-touch is sent through the Chrome DevTools Protocol');
+  await page.goto('/?debug');
+  const cdp = await page.context().newCDPSession(page);
+  const b = (await page.locator('.key[data-dot="1"]').boundingBox())!;
+  const one = { x: b.x + b.width / 2, y: b.y + b.height / 2, id: 1 };
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [one] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  const log = await page.locator('#debug-log').textContent();
+  // Milliseconds from the first event; touch and pointer events come in the browser's own order
+  expect(log).toMatch(/^ +0 /);
+  for (const line of [/touchstart \[1\] on screen 1$/m, /down #\d+ dot 1 held 0$/m, /touchcancel \[1\] on screen 0$/m, /cancel #\d+ dot 1 held 1$/m]) {
+    expect(log).toMatch(line);
+  }
+});
+
+test('without ?debug, no event log', async ({ page }) => {
+  await gotoApp(page);
+  await chord(page, '1');
+  await expect(page.locator('#debug-log')).toHaveCount(0);
+});

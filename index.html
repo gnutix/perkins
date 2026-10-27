@@ -563,6 +563,13 @@ div.toggle { cursor: default; }
   pointer-events: none;
 }
 
+#debug-log {
+  position: fixed; inset: env(safe-area-inset-top, 0px) auto auto env(safe-area-inset-left, 0px); z-index: 60;
+  margin: 0; padding: 4px 8px; max-height: 60vh; overflow: hidden;
+  background: rgba(255, 255, 255, .9); color: var(--ink); font: 11px/1.3 var(--f-mono);
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .caret, .key.dot.hint, .key.space.hint, .u.cur.err, .machine.flash { animation: none; }
 }
@@ -1464,6 +1471,26 @@ div.toggle { cursor: default; }
   // Keep iOS from zooming, selecting or running its three-finger gestures on the keys
   for (const type of ['touchstart', 'touchmove', 'touchend']) {
     el.machine.addEventListener(type, (e) => { e.preventDefault(); if (type === 'touchend') audio(); }, { passive: false });
+  }
+  // ?debug: the raw touch and pointer events, in ms from the first finger, to see what the phone sends
+  if (new URLSearchParams(location.search).has('debug')) {
+    const log = document.createElement('pre');
+    log.id = 'debug-log';
+    document.body.append(log);
+    let lines = [], t0 = 0, last = -Infinity;
+    const dotOf = (t) => t?.closest?.('.key')?.dataset.dot ?? '-';
+    const note = (e, text) => {
+      if (e.timeStamp - last > 1500) { lines = []; t0 = e.timeStamp; }
+      last = e.timeStamp;
+      lines.push(`${String(Math.round(e.timeStamp - t0)).padStart(5)} ${text}`);
+      log.textContent = lines.slice(-40).join('\n');
+    };
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel']) {
+      window.addEventListener(type, (e) => note(e, `${type.slice(7)} #${e.pointerId} dot ${dotOf(e.target)} held ${sources.size}`), true);
+    }
+    for (const type of ['touchstart', 'touchend', 'touchcancel']) {
+      window.addEventListener(type, (e) => note(e, `${type} [${[...e.changedTouches].map((t) => dotOf(t.target)).join(' ')}] on screen ${e.touches.length}`), true);
+    }
   }
 
   const CODES = { KeyF: '1', KeyD: '2', KeyS: '3', KeyJ: '4', KeyK: '5', KeyL: '6', Space: 'space', Enter: 'enter', Backspace: 'back' };
