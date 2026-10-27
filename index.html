@@ -1449,7 +1449,18 @@ div.toggle { cursor: default; }
     keyDown('p' + e.pointerId, key);
   });
   window.addEventListener('pointerup', (e) => keyUp('p' + e.pointerId));
-  window.addEventListener('pointercancel', (e) => keyUp('p' + e.pointerId));
+  // An iPhone follows five fingers at most: a sixth cancels them all, and never comes down itself.
+  // Five fingers on five dots, then a cancel, is therefore é (1-2-3-4-5-6) on the way
+  window.addEventListener('pointercancel', (e) => {
+    const held = [...sources.values()].filter((k) => k.dataset.dot);
+    if (held.length === 5 && sources.has('p' + e.pointerId)) {
+      const dot = [1, 2, 3, 4, 5, 6].find((d) => !held.some((k) => +k.dataset.dot === d));
+      const now = performance.now();
+      chordDots |= 1 << (dot - 1);
+      chordKeys.push([dot, now, now]);
+    }
+    keyUp('p' + e.pointerId);
+  });
   // Keep iOS from zooming, selecting or running its three-finger gestures on the keys
   for (const type of ['touchstart', 'touchmove', 'touchend']) {
     el.machine.addEventListener(type, (e) => { e.preventDefault(); if (type === 'touchend') audio(); }, { passive: false });
