@@ -49,10 +49,12 @@ what a session needs to change them safely.
   (`'<lessonId>:<index>'` → best %), `custom`, `stats` (weak spots: last 20 outcomes per sign), `pick`,
   `reading`, `journal-outbox`. Since lesson progress is keyed by index, only append items to a lesson in
   `LESSONS`; never insert, reorder or remove them.
-- IndexedDB `sixpoints`, version 2: `events` (autoIncrement, index `t`, unique index `id`) and `days`
-  (keyPath `day`, local `YYYY-MM-DD`). Her phone has held real data since 2026-10-25. To change the schema,
-  bump the version and migrate in `onupgradeneeded` from `oldVersion`. Never delete or recreate a store.
-  Old records must stay readable (events carry `v`; day rows are filled in on read).
+- IndexedDB `sixpoints`, version 3: `events` (autoIncrement, index `t`, unique index `id`) and `days`
+  (keyPath `day`, local `YYYY-MM-DD`). Her phone has held real data since 2026-10-25. To change the
+  schema, bump the version and migrate in `onupgradeneeded` from `oldVersion`. Never delete or recreate a
+  store. Old records must stay readable (events carry `v`; day rows are filled in on read).
+- v3 recounted the days holding « phantom » é misses, typed before the six-finger fix (`phantomE`): they
+  stay in `events`, only their time counts, and `summarise` keeps leaving them out.
 - Each journal write goes to the localStorage outbox first, then to IndexedDB. A failed write must never
   interrupt practice. Nothing leaves the phone, and there is no export (her choice).
 - Removing the home-screen icon deletes all of it: never suggest it as a fix.

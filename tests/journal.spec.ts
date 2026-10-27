@@ -130,7 +130,7 @@ test('reading answers are recorded and counted per sign, and an answer after a 3
   expect((await events(page))[4]).toMatchObject({ ch: '!', ok: true, dt: null });
 });
 
-test('a v1 journal (commit a02e13b) becomes v2 with every record kept and counted', async ({ page }) => {
+test('a v1 journal (commit a02e13b) is upgraded with every record kept and counted', async ({ page }) => {
   await page.clock.setFixedTime(FIXED_NOW);
   const YESTERDAY = '2026-10-20';
   const at = (day: string, i: number) => new Date(`${day}T10:0${i}:00+02:00`).getTime();
@@ -152,7 +152,7 @@ test('a v1 journal (commit a02e13b) becomes v2 with every record kept and counte
   await openProgress(page);
 
   const db = (await readDb(page))!;
-  expect(db.version).toBe(2);
+  expect(db.version).toBe(3);
   expect(db.indexes).toEqual(['id', 't']);
   expect(db.events).toEqual(v1Events);
   expect(db.days).toEqual(v1Days);
@@ -173,6 +173,51 @@ test('a v1 journal (commit a02e13b) becomes v2 with every record kept and counte
   expect(after[9]).toMatchObject({ type: 'sign', mode: 'free', ch: 'a', id: expect.any(String) });
 });
 
+test('v3: é missed before the six-finger fix (2fae2d7) leaves the counts, its time stays, and the events are kept', async ({ page }) => {
+  // The fix reached her phone on 27 October 2026 at 13:24 UTC, 14:24 in Zurich
+  await page.clock.setFixedTime(new Date('2026-10-27T16:00:00+01:00'));
+  const at = (day: string, time: string) => new Date(`2026-10-${day}T${time}:00+01:00`).getTime();
+  let n = 0;
+  const sign = (day: string, time: string, k: string, got: string, o = {}) => ({
+    v: 1, id: `seed.${n++}`, t: at(day, time), type: 'sign', mode: 'ex', ex: 'ac:0', ch: k, k, exp: M(L[k]), got: M(got),
+    ok: L[k] === got, first: true, hint: false, dt: 800, keys: [[1, 0, 80]], lift: false, ...o,
+  });
+  const events = [
+    sign('26', '20:00', 'é', L['ù']), // six fingers, five seen: phantom
+    sign('27', '10:00', 'é', L['ç']), // phantom
+    sign('27', '10:01', 'é', '23', { first: false }), // two seen, then the cancel: phantom
+    sign('27', '10:02', 'é', L['é'], { first: false, hint: true }), // rolled in after « Montrer »: phantom
+    sign('27', '10:03', 'h', L.d), // a real miss
+    sign('27', '10:04', 'a', L.a),
+    sign('27', '15:00', 'é', L['é']), // after the fix
+    sign('27', '15:01', 'é', L['à']), // a real miss of é
+  ];
+  // The rows as the app summed them up before; the 25th has no é and must stay exactly as it is
+  const blank = { hints: 0, done: 0, readSigns: 0, readErrors: 0, readMs: 0, readBySign: {}, freeSigns: 0, freeErrors: 0, freeErased: 0, freeMs: 0, freeTime: 0, freeTimed: 0 };
+  const days = [
+    { ...blank, day: '2026-10-25', ms: 99_000, signs: 99, errors: 9, bySign: { b: [9, 9, 0, 0] } },
+    { ...blank, day: '2026-10-26', ms: 800, signs: 1, errors: 1, bySign: { 'é': [1, 1, 0, 0] } },
+    { ...blank, day: '2026-10-27', ms: 5600, signs: 7, errors: 4, hints: 1, bySign: { 'é': [3, 2, 800, 1], h: [1, 1, 0, 0], a: [1, 0, 800, 1] } },
+  ];
+  await seedDb(page, { events, days });
+  // Weak spots, first tries oldest first: one é right long ago, the two phantoms, then the two since the fix
+  await gotoApp(page, { stats: { 'é': ['', 'ù', 'ç', '', 'à'], h: ['d'] } });
+  await openProgress(page);
+
+  const db = (await readDb(page))!;
+  expect(db.version).toBe(3);
+  expect(db.events).toEqual(events);
+  expect(db.days).toEqual([
+    days[0],
+    { ...blank, day: '2026-10-26', ms: 800, signs: 0, errors: 0, bySign: {} },
+    { ...blank, day: '2026-10-27', ms: 5600, signs: 4, errors: 2, bySign: { 'é': [2, 1, 800, 1], h: [1, 1, 0, 0], a: [1, 0, 800, 1] } },
+  ]);
+  expect(await store(page, 'stats')).toEqual({ 'é': ['', '', 'à'], h: ['d'] });
+  expect(await confusions(page)).toEqual(['h→d 1 fois', 'é→à 1 fois']);
+  await page.click('.sg[data-k="é"]');
+  expect((await page.locator('#sg-detail').textContent())!.replace(/\s+/g, ' ')).toMatch(/\b2 essais au premier coup, 1 raté \(50 %\)/);
+});
+
 test('a connection closed under the app reopens, and an aborted write is retried, each event stored once', async ({ page }) => {
   await page.addInitScript(() => {
     const w = window as any;
@@ -181,7 +226,8 @@ test('a connection closed under the app reopens, and an aborted write is retried
     const open = IDBFactory.prototype.open;
     IDBFactory.prototype.open = function (this: IDBFactory, ...args: [string, number?]) {
       const req = open.apply(this, args);
-      if (args[1] === 2) req.addEventListener('success', () => w.__conns.push(req.result));
+      // The app's own connections: it names the version, readDb() does not
+      if (args[1] != null) req.addEventListener('success', () => w.__conns.push(req.result));
       return req;
     };
     // Aborted once its requests are queued, as when iOS cuts a page off in the background

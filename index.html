@@ -1074,8 +1074,14 @@ div.toggle { cursor: default; }
   //   signs, errors, hints, bySign (exercises), readSigns, readErrors, readMs, readBySign,
   //   freeSigns, freeErrors ('?'), freeErased, freeMs, freeTime, freeTimed (free typing speed) }
   //   bySign / readBySign: { k: [first tries, misses, time sum (ms, right and unhinted, capped 10 s), timed] }
+  // Until the fix of 27 October 2026, 13:24 UTC, six fingers on her iPhone never made é (see the Chord
+  // engine): an é missed in an exercise before then says nothing about her: only its time is counted
+  const E_FIXED = Date.UTC(2026, 9, 27, 13, 24);
+  const isE = (ev) => ev.mode === 'ex' && ev.type === 'sign' && ev.exp === CHAR2MASK['é'];
+  const phantomE = (ev) => ev.t < E_FIXED && isE(ev) && (!ev.ok || ev.hint);
+
   const journal = (() => {
-    const DB = 'sixpoints', VERSION = 2, OUTBOX = 'sixpoints.journal-outbox', OUTBOX_MAX = 1000;
+    const DB = 'sixpoints', VERSION = 3, OUTBOX = 'sixpoints.journal-outbox', OUTBOX_MAX = 1000;
     const OPEN_TIMEOUT = 8000, BATCH = 200, LOST = ['InvalidStateError', 'UnknownError', 'TransactionInactiveError', 'AbortError'];
     const health = { error: null, persisted: null };
     let dbp = null, live = null, flushing = null, retryAt = 0, delay = 0, timer = 0, memBox = null, seq = 0, asked = false;
@@ -1093,14 +1099,34 @@ div.toggle { cursor: default; }
     const normDay = (row) => ({ ...blankDay(row.day), ...row });
 
     // Schema, oldest first, keyed on the version the phone has. v1: events + days. v2: a unique 'id'
-    // on events (v1 events have none and stay as they are). Never delete or recreate a store here:
-    // it holds her history.
+    // on events (v1 events have none and stay as they are). v3: the days that counted a phantom é
+    // counted again without it. Never delete or recreate a store here: it holds her history.
     function upgrade(db, from, tx) {
       if (from < 1) {
         db.createObjectStore('events', { autoIncrement: true }).createIndex('t', 't');
         db.createObjectStore('days', { keyPath: 'day' });
       }
       if (from < 2) tx.objectStore('events').createIndex('id', 'id', { unique: true });
+      if (from >= 1 && from < 3) recountE(tx);
+    }
+    // The events stay as they are; their days are summed up again, and the phantom misses leave the
+    // weak spots, whose last outcomes for é are the tries since the fix
+    function recountE(tx) {
+      const req = tx.objectStore('events').getAll();
+      req.onsuccess = () => {
+        const all = req.result;
+        const rows = new Map(all.filter(phantomE).map((ev) => [dayOf(ev.t), blankDay(dayOf(ev.t))]));
+        if (!rows.size) return;
+        for (const ev of all) if (rows.has(dayOf(ev.t))) summarise(rows.get(dayOf(ev.t)), ev);
+        rows.forEach((row) => tx.objectStore('days').put(row));
+        const r = stats['é'];
+        if (!r) return;
+        const since = all.filter((ev) => ev.t >= E_FIXED && isE(ev) && ev.first).length;
+        const cut = Math.max(0, r.length - since);
+        stats['é'] = [...r.slice(0, cut).filter((out) => !out), ...r.slice(cut)];
+        if (!stats['é'].length) delete stats['é'];
+        store.set('stats', stats);
+      };
     }
 
     // A connection the browser has closed throws InvalidStateError from transaction(); an empty scope
@@ -1178,6 +1204,7 @@ div.toggle { cursor: default; }
         const dt = ev.dt == null ? 0 : Math.min(ev.dt, 30000);
         row.ms += dt;
         if (ev.type === 'done') row.done++;
+        else if (phantomE(ev)) return; // practice all the same: its time counts, not its outcome
         else if (ev.mode === 'free') {
           row.freeMs += dt;
           if (ev.type === 'erase') row.freeErased++;
@@ -2163,7 +2190,7 @@ div.toggle { cursor: default; }
         }
         prev2 = prev;
         prev = e;
-      } else if (e.type === 'sign' && e.first && !e.ok && e.k) {
+      } else if (e.type === 'sign' && e.first && !e.ok && e.k && !phantomE(e)) {
         note(e.k, e.got, typedOf(e.k, e.got), false);
       }
     }
