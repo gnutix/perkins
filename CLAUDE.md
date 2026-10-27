@@ -34,8 +34,10 @@ what a session needs to change them safely.
   key is up, and a dot stays once its key went down, as on a real Perkins. « Retirer un point en relâchant »
   is an opt-in with a 150 ms grace. `#machine` cancels touch events so iOS doesn't zoom or run its
   three-finger gestures.
-- An iPhone follows five touches at most: a sixth cancels them all and is never reported. So a
-  `pointercancel` while five dots are held stands for the sixth dot, which is how é (1-2-3-4-5-6) gets written.
+- An iPhone follows five touches at most: past that it cancels them all, often before reporting the
+  last ones (six fingers landing together: two dots seen, then the cancel). So a touch `pointercancel` on a
+  dot writes é (1-2-3-4-5-6). `?debug` lists the raw touch and pointer events on screen, to see what
+  the phone sends.
 - Lecture uses the native iOS keyboard: the input stays a real focusable field with text ≥ 16px,
   autocorrect off, and the view sized from `visualViewport`.
 - Braille is French uncontracted (CBFU): capital ⠨ (4-6), a word in capitals ⠨⠨, number sign ⠠ (6) plus

@@ -95,7 +95,7 @@ test('several fingers on the on-screen keys make one sign (touch, as on her iPho
 });
 
 for (const liftToFix of [false, true]) {
-  test(`six fingers make é on an iPhone, which follows five and cancels them all at the sixth${liftToFix ? ' (« Retirer un point en relâchant »)' : ''}`, async ({ page, browserName }) => {
+  test(`six fingers make é on an iPhone, which follows five and cancels them all past that${liftToFix ? ' (« Retirer un point en relâchant »)' : ''}`, async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'multi-touch is sent through the Chrome DevTools Protocol');
     await gotoApp(page, { settings: { liftToFix } });
     const cdp = await page.context().newCDPSession(page);
@@ -113,10 +113,14 @@ for (const liftToFix of [false, true]) {
     await expect(page.locator('.key.down')).toHaveCount(0);
     expect(await freeText(page)).toBe('é');
 
-    // Fewer fingers cancelled (a call, a system gesture): their own dots, nothing added
-    for (let i = 1; i <= 4; i++) await touch('touchStart', fingers.slice(0, i));
+    // Six fingers landing together, as logged on her iPhone with ?debug: dots 2 and 3 reported
+    // together, the other four never, and 36 ms later the cancel
+    await touch('touchStart', [fingers[1], fingers[2]]);
+    await expect(page.locator('.key.down')).toHaveCount(2);
     await touch('touchCancel', []);
-    expect(await freeText(page)).toBe('ép');
+    await expect(page.locator('.key.down')).toHaveCount(0);
+    expect(await freeText(page)).toBe('éé');
+    expect(await preview(page)).toEqual({ dots: '123456', label: 'é' });
   });
 }
 
